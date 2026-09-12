@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import StockChart from './StockChart'
 
 type Quote = {
   price: number
@@ -11,20 +12,17 @@ type Quote = {
 function isMarketOpen(): boolean {
   const now = new Date()
   const nyTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
-  const day = nyTime.getDay() // 0 = Sunday, 6 = Saturday
-  const hours = nyTime.getHours()
-  const minutes = nyTime.getMinutes()
-  const totalMinutes = hours * 60 + minutes
-
+  const day = nyTime.getDay()
+  const totalMinutes = nyTime.getHours() * 60 + nyTime.getMinutes()
   const isWeekday = day >= 1 && day <= 5
-  const isDuringHours = totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60 // 9:30am-4:00pm
-
+  const isDuringHours = totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60
   return isWeekday && isDuringHours
 }
 
 export default function PriceList({ portfolio }: { portfolio: { id: number; ticker: string }[] }) {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({})
   const [marketOpen, setMarketOpen] = useState(false)
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
 
   const fetchQuotes = useCallback(async () => {
     const results: Record<string, Quote> = {}
@@ -40,16 +38,13 @@ export default function PriceList({ portfolio }: { portfolio: { id: number; tick
 
   useEffect(() => {
     if (portfolio.length === 0) return
-
-    fetchQuotes() // always fetch once immediately on load
+    fetchQuotes()
     setMarketOpen(isMarketOpen())
-
     const interval = setInterval(() => {
       const open = isMarketOpen()
       setMarketOpen(open)
       if (open) fetchQuotes()
-    }, 15000) // 15 seconds
-
+    }, 15000)
     return () => clearInterval(interval)
   }, [portfolio, fetchQuotes])
 
@@ -65,13 +60,13 @@ export default function PriceList({ portfolio }: { portfolio: { id: number; tick
           return (
             <li
               key={item.id}
-              className="text-lg border rounded px-4 py-2 flex justify-between items-center"
+              onClick={() => setSelectedTicker(item.ticker)}
+              className="text-lg border rounded px-4 py-2 flex justify-between items-center cursor-pointer hover:bg-gray-900"
             >
               <span>{item.ticker}</span>
               {quote ? (
                 <span className={isUp ? 'text-green-500' : 'text-red-500'}>
-                  ${quote.price?.toFixed(2)} ({isUp ? '+' : ''}
-                  {quote.percentChange?.toFixed(2)}%)
+                  ${quote.price?.toFixed(2)} ({isUp ? '+' : ''}{quote.percentChange?.toFixed(2)}%)
                 </span>
               ) : (
                 <span className="text-gray-400 text-sm">Loading...</span>
@@ -80,6 +75,10 @@ export default function PriceList({ portfolio }: { portfolio: { id: number; tick
           )
         })}
       </ul>
+
+      {selectedTicker && (
+        <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+      )}
     </div>
   )
 }
