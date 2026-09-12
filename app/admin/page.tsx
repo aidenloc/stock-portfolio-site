@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import AdminPortfolioForm from './AdminPortfolioForm'
 import LogoutButton from './LogoutButton'
+import ThemeEditor from './ThemeEditor'
 
 export default async function AdminDashboard() {
   const { data: portfolio, error } = await supabase
@@ -19,6 +20,7 @@ export default async function AdminDashboard() {
         <LogoutButton />
       </div>
       <AdminPortfolioForm portfolio={portfolio ?? []} />
+      <ThemeEditor />
     </main>
   )
 }
