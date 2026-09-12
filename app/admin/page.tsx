@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabaseClient'
-import PriceList from './PriceList'
+import AdminPortfolioForm from './AdminPortfolioForm'
+import LogoutButton from './LogoutButton'
 
-export default async function Home() {
+export default async function AdminDashboard() {
   const { data: portfolio, error } = await supabase
     .from('portfolio')
     .select('*')
@@ -13,13 +14,11 @@ export default async function Home() {
 
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">My Portfolio</h1>
-      <PriceList portfolio={portfolio ?? []} />
-      <div className="mt-12 text-center">
-        <a href="/admin/login" className="text-xs text-gray-600 hover:text-gray-400">
-          Admin
-        </a>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <LogoutButton />
       </div>
+      <AdminPortfolioForm portfolio={portfolio ?? []} />
     </main>
   )
 }

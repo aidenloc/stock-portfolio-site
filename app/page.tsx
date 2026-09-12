@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabaseClient'
-import PortfolioForm from './PortfolioForm'
 import PriceList from './PriceList'
 
 export default async function Home() {
@@ -16,7 +15,11 @@ export default async function Home() {
     <main className="p-8">
       <h1 className="text-2xl font-bold mb-4">My Portfolio</h1>
       <PriceList portfolio={portfolio ?? []} />
-      <PortfolioForm portfolio={portfolio ?? []} />
+      <div className="mt-12 text-center">
+        <a href="/admin/login" className="text-xs text-gray-600 hover:text-gray-400">
+          Admin
+        </a>
+      </div>
     </main>
   )
 }
