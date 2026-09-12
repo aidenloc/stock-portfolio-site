@@ -92,7 +92,7 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
                 <YAxis domain={['auto', 'auto']} stroke="#888" width={60} />
                 <Tooltip
                   labelFormatter={(t) => formatLabel(Number(t), period)}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                  formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Price']}
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
                 />
                 <Line type="monotone" dataKey="price" stroke={isUp ? '#22c55e' : '#ef4444'} dot={false} strokeWidth={2} />
