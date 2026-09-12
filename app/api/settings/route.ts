@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { supabase } from '@/lib/supabaseClient'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isValidSessionToken } from '@/lib/session'
 
@@ -9,41 +10,32 @@ async function checkAuth() {
   return isValidSessionToken(token)
 }
 
-export async function POST(request: Request) {
-  const isAuthed = await checkAuth()
-  if (!isAuthed) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  const { ticker } = await request.json()
-
-  if (!ticker || typeof ticker !== 'string') {
-    return NextResponse.json({ error: 'Invalid ticker' }, { status: 400 })
-  }
-
-  const { error } = await supabaseAdmin
-    .from('portfolio')
-    .insert({ ticker: ticker.toUpperCase().trim() })
+export async function GET() {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('*')
+    .eq('id', 1)
+    .single()
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json(data)
 }
 
-export async function DELETE(request: Request) {
+export async function PUT(request: Request) {
   const isAuthed = await checkAuth()
   if (!isAuthed) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const { id } = await request.json()
+  const updates = await request.json()
 
   const { error } = await supabaseAdmin
-    .from('portfolio')
-    .delete()
-    .eq('id', id)
+    .from('site_settings')
+    .update(updates)
+    .eq('id', 1)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

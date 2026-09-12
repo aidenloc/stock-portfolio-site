@@ -57,7 +57,8 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-black border border-gray-700 rounded-lg p-6 w-full max-w-2xl"
+        className="border border-[var(--color-text)]/20 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)] w-full max-w-2xl"
+        style={{ backgroundColor: 'var(--color-bg)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
@@ -70,8 +71,8 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1 rounded text-sm ${
-                period === p ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300'
+              className={`px-3 py-1 rounded-[var(--border-radius)] text-sm ${
+                period === p ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-text)]/10'
               }`}
             >
               {p}

@@ -53,7 +53,7 @@ export default function PriceList({ portfolio }: { portfolio: { id: number; tick
       <p className="text-xs text-gray-400 mb-2">
         {marketOpen ? '🟢 Market open — auto-refreshing every 15s' : '⚪ Market closed — showing last available prices'}
       </p>
-      <ul className="space-y-2">
+      <ul className="space-y-[calc(var(--spacing-unit)*0.5rem)]">
         {portfolio.map((item) => {
           const quote = quotes[item.ticker]
           const isUp = quote && quote.change >= 0
@@ -61,7 +61,7 @@ export default function PriceList({ portfolio }: { portfolio: { id: number; tick
             <li
               key={item.id}
               onClick={() => setSelectedTicker(item.ticker)}
-              className="text-lg border rounded px-4 py-2 flex justify-between items-center cursor-pointer hover:bg-gray-900"
+              className="border rounded-[var(--border-radius)] px-[calc(var(--spacing-unit)*1rem)] py-[calc(var(--spacing-unit)*0.5rem)] flex justify-between items-center cursor-pointer hover:bg-[var(--color-text)]/10 text-lg"
             >
               <span>{item.ticker}</span>
               {quote ? (

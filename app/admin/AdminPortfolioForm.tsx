@@ -50,7 +50,7 @@ export default function AdminPortfolioForm({ portfolio }: { portfolio: { id: num
           onChange={(e) => setTicker(e.target.value)}
           className="border rounded px-3 py-2 text-black bg-white"
         />
-        <button onClick={handleAdd} className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button onClick={handleAdd} className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-[var(--border-radius)]">
           Add
         </button>
       </div>

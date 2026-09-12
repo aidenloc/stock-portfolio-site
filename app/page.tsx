@@ -12,8 +12,8 @@ export default async function Home() {
   }
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">My Portfolio</h1>
+    <main className="p-[calc(var(--spacing-unit)*2rem)]">
+      <h1 className="text-2xl font-bold mb-[calc(var(--spacing-unit)*1rem)]">My Portfolio</h1>
       <PriceList portfolio={portfolio ?? []} />
       <div className="mt-12 text-center">
         <a href="/admin/login" className="text-xs text-gray-600 hover:text-gray-400">
