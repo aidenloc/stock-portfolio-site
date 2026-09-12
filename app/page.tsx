@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
+import PortfolioForm from './PortfolioForm'
+import PriceList from './PriceList'
 
 export default async function Home() {
   const { data: portfolio, error } = await supabase
@@ -13,13 +15,8 @@ export default async function Home() {
   return (
     <main className="p-8">
       <h1 className="text-2xl font-bold mb-4">My Portfolio</h1>
-      <ul className="space-y-2">
-        {portfolio?.map((item) => (
-          <li key={item.id} className="text-lg border rounded px-4 py-2">
-            {item.ticker}
-          </li>
-        ))}
-      </ul>
+      <PriceList portfolio={portfolio ?? []} />
+      <PortfolioForm portfolio={portfolio ?? []} />
     </main>
   )
 }
