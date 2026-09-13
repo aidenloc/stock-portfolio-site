@@ -55,6 +55,7 @@ export default function PaperPortfolio() {
   const [period, setPeriod] = useState<Period>('1M')
   const [data, setData] = useState<Performance | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showBenchmark, setShowBenchmark] = useState(true)
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true)
@@ -74,7 +75,8 @@ export default function PaperPortfolio() {
   if (!data && loading) return null
   if (!data || !data.holdings || data.holdings.length === 0) return null
 
-  const isUp = data.totalReturnPct >= 0
+  const periodReturnPct = data.series.length ? data.series[data.series.length - 1].portfolioReturnPct : 0
+  const isUp = periodReturnPct >= 0
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
@@ -87,11 +89,11 @@ export default function PaperPortfolio() {
         </span>
         <span className={`text-lg font-medium ${isUp ? 'text-green-500' : 'text-red-500'}`}>
           {isUp ? '+' : ''}
-          {data.totalReturnPct.toFixed(2)}% all-time
+          {periodReturnPct.toFixed(2)}% ({period})
         </span>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {PERIODS.map((p) => (
           <button
             key={p}
@@ -103,6 +105,14 @@ export default function PaperPortfolio() {
             {p}
           </button>
         ))}
+        <button
+          onClick={() => setShowBenchmark((v) => !v)}
+          className={`ml-auto px-3 py-1 rounded-[var(--border-radius)] text-sm border ${
+            showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
+          }`}
+        >
+          S&amp;P 500
+        </button>
       </div>
 
       <div className="h-72 mb-6 border border-[var(--color-text)]/20 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1rem)]">
@@ -128,15 +138,17 @@ export default function PaperPortfolio() {
                 dot={false}
                 strokeWidth={2}
               />
-              <Line
-                type="monotone"
-                dataKey="spyReturnPct"
-                name="S&P 500 (SPY)"
-                stroke="#888"
-                dot={false}
-                strokeWidth={2}
-                strokeDasharray="4 4"
-              />
+              {showBenchmark && (
+                <Line
+                  type="monotone"
+                  dataKey="spyReturnPct"
+                  name="S&P 500 (SPY)"
+                  stroke="#888"
+                  dot={false}
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         )}
