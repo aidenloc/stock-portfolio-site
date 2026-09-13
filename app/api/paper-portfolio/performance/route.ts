@@ -70,11 +70,18 @@ export async function GET(request: Request) {
     )
     const sectorByTicker = new Map(sectorEntries)
 
-    await Promise.all(
+    const updateResults = await Promise.all(
       typedHoldings
         .filter((h) => !h.sector && sectorByTicker.get(h.ticker))
         .map((h) => supabaseAdmin.from('paper_portfolio').update({ sector: sectorByTicker.get(h.ticker) }).eq('id', h.id))
     )
+    for (const result of updateResults) {
+      // Don't let a persistence failure pass silently — if this keeps failing
+      // (e.g. the sector column migration was never actually run), every
+      // request will re-fetch from Finnhub instead of caching, defeating the
+      // point of this backfill.
+      if (result.error) console.error('Failed to persist sector backfill:', result.error.message)
+    }
 
     for (const h of typedHoldings) {
       if (!h.sector) h.sector = sectorByTicker.get(h.ticker) ?? null
