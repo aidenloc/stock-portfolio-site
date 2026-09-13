@@ -2,6 +2,11 @@ import { supabase } from '@/lib/supabaseClient'
 import PriceList from './PriceList'
 import PaperPortfolio from './PaperPortfolio'
 
+// Same reason as app/admin/page.tsx: this page has no Request-time API, so
+// Next would otherwise prerender it once at build time and freeze the
+// ticker list until the next deploy, even though admin edits the table live.
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const { data: portfolio, error } = await supabase
     .from('portfolio')

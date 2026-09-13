@@ -4,6 +4,12 @@ import PaperPortfolioForm from './PaperPortfolioForm'
 import LogoutButton from './LogoutButton'
 import ThemeEditor from './ThemeEditor'
 
+// Without this, Next prerenders this page once at build time (no
+// Request-time API is used here) and serves that same static snapshot
+// forever — router.refresh() after an add/delete just re-fetches the
+// identical cached payload instead of hitting Supabase again.
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   const { data: portfolio, error } = await supabase
     .from('portfolio')
