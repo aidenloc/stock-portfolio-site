@@ -15,6 +15,7 @@ type Settings = {
   primary_color: string
   background_color: string
   text_color: string
+  card_background_color: string | null
   font_family: string
   spacing_scale: string
   border_radius: string
@@ -84,6 +85,16 @@ export default function ThemeEditor() {
             onChange={(e) => updateField('text_color', e.target.value.replace('#', ''))}
             className="w-full h-10 rounded cursor-pointer"
           />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Card background</label>
+          <input
+            type="color"
+            value={`#${(settings.card_background_color || '2a2a2a').replace('#', '')}`}
+            onChange={(e) => updateField('card_background_color', e.target.value.replace('#', ''))}
+            className="w-full h-10 rounded cursor-pointer"
+          />
+          <p className="text-xs text-gray-500 mt-1">Background for dashboard cards (chart, exposure, holdings). Defaults to a subtle shade of the page background until set.</p>
         </div>
         <div>
           <label className="block text-sm mb-1">Border radius</label>

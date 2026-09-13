@@ -57,8 +57,8 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="border border-[var(--color-text)]/20 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)] w-full max-w-2xl"
-        style={{ backgroundColor: 'var(--color-bg)' }}
+        className="border border-[var(--color-text)]/10 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)] w-full max-w-2xl shadow-2xl"
+        style={{ backgroundColor: 'var(--color-card)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">

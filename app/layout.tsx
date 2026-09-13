@@ -32,6 +32,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     '--color-bg': settings?.background_color ? `#${settings.background_color.replace('#', '')}` : '#000000',
     '--color-text': settings?.text_color ? `#${settings.text_color.replace('#', '')}` : '#ffffff',
     '--color-primary': settings?.primary_color ? `#${settings.primary_color.replace('#', '')}` : '#2563eb',
+    // Card surface for the dashboard's card-based layout. Left unset by an
+    // admin, it derives a subtle lifted shade from the background instead of
+    // a hardcoded color, so it adapts to whatever background is picked.
+    '--color-card': settings?.card_background_color
+      ? `#${settings.card_background_color.replace('#', '')}`
+      : 'color-mix(in srgb, var(--color-bg) 100%, white 8%)',
     '--font-family': settings?.font_family || 'sans-serif',
     '--border-radius': settings?.border_radius || '8px',
     '--spacing-unit': spacingMap[settings?.spacing_scale as keyof typeof spacingMap] ?? 1,

@@ -92,18 +92,41 @@ function buildExposure(holdings: Holding[], keyFn: (h: Holding) => string): Expo
   return top
 }
 
+// Small colored pill for a signed %/$ delta — Finary-style badge rather than plain colored text.
+function GainBadge({ value, size = 'sm', children }: { value: number; size?: 'sm' | 'md'; children: React.ReactNode }) {
+  const up = value >= 0
+  const sizeClasses = size === 'md' ? 'text-sm px-2.5 py-1' : 'text-xs px-2 py-0.5'
+  return (
+    <span
+      className={`inline-flex items-center rounded-full font-medium ${sizeClasses} ${
+        up ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+      }`}
+    >
+      {children}
+    </span>
+  )
+}
+
+function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.25rem)] ${className}`}>
+      {children}
+    </div>
+  )
+}
+
 function ExposureBar({ title, slices }: { title: string; slices: ExposureSlice[] }) {
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-2">{title}</p>
-      <div className="flex gap-[2px] h-6 rounded-[var(--border-radius)] overflow-hidden mb-2">
+      <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">{title}</p>
+      <div className="flex gap-[2px] h-7 rounded-[var(--border-radius)] overflow-hidden mb-3">
         {slices.map((s) => (
           <div key={s.label} style={{ width: `${s.pct}%`, backgroundColor: s.color }} title={`${s.label}: ${s.pct.toFixed(1)}%`} />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-gray-400">
         {slices.map((s) => (
-          <span key={s.label} className="flex items-center gap-1">
+          <span key={s.label} className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
             {s.label} ({s.pct.toFixed(1)}%)
           </span>
@@ -147,131 +170,131 @@ export default function PaperPortfolio() {
   if (!data || !data.holdings || data.holdings.length === 0) return null
 
   const periodReturnPct = data.series.length ? data.series[data.series.length - 1].portfolioReturnPct : 0
-  const isUp = periodReturnPct >= 0
 
   const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
-      <h2 className="text-2xl font-bold mb-1">Paper Portfolio</h2>
-      <p className="text-xs text-gray-400 mb-4">Simulated portfolio, tracked for performance only — not real money.</p>
-
-      <div className="flex items-baseline gap-3 mb-4">
-        <span className="text-4xl font-bold">
+      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
+      <div className="flex flex-wrap items-end gap-3 mb-1">
+        <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none">
           ${data.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-        </span>
-        <span className={`text-lg font-medium ${isUp ? 'text-green-500' : 'text-red-500'}`}>
-          {isUp ? '+' : ''}
-          {periodReturnPct.toFixed(2)}% ({period})
-        </span>
+        </h1>
+        <GainBadge value={periodReturnPct} size="md">
+          {periodReturnPct >= 0 ? '+' : ''}
+          {periodReturnPct.toFixed(2)}% · {period}
+        </GainBadge>
       </div>
+      <p className="text-xs text-gray-500 mb-8">Simulated portfolio, tracked for performance only — not real money.</p>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {PERIODS.map((p) => (
+      <Card className="mb-6">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="inline-flex bg-[var(--color-bg)] rounded-full p-1 gap-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                  period === p ? 'bg-[var(--color-primary)] text-white' : 'text-gray-400 hover:text-[var(--color-text)]'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
           <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`px-3 py-1 rounded-[var(--border-radius)] text-sm ${
-              period === p ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-text)]/10'
+            onClick={() => setShowBenchmark((v) => !v)}
+            className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors ${
+              showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
             }`}
           >
-            {p}
+            S&amp;P 500
           </button>
-        ))}
-        <button
-          onClick={() => setShowBenchmark((v) => !v)}
-          className={`ml-auto px-3 py-1 rounded-[var(--border-radius)] text-sm border ${
-            showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
-          }`}
-        >
-          S&amp;P 500
-        </button>
-      </div>
+        </div>
 
-      <div className="h-72 mb-6 border border-[var(--color-text)]/20 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1rem)]">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.series}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
-              <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-              <Tooltip
-                labelFormatter={(t) => formatLabel(Number(t), period)}
-                formatter={(value: any, name: any, entry: any) => {
-                  const point = entry?.payload as SeriesPoint | undefined
-                  const pct = `${Number(value).toFixed(2)}%`
-                  if (name === 'Portfolio') {
-                    const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
-                    return [`${pct} (${dollar})`, name]
-                  }
-                  const spyPrice = point?.spyPrice
-                  return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
-                }}
-                contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="portfolioReturnPct"
-                name="Portfolio"
-                stroke="var(--color-primary)"
-                dot={false}
-                strokeWidth={2}
-              />
-              {showBenchmark && (
+        <div className="h-72">
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.series}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
+                <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                <Tooltip
+                  labelFormatter={(t) => formatLabel(Number(t), period)}
+                  formatter={(value: any, name: any, entry: any) => {
+                    const point = entry?.payload as SeriesPoint | undefined
+                    const pct = `${Number(value).toFixed(2)}%`
+                    if (name === 'Portfolio') {
+                      const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
+                      return [`${pct} (${dollar})`, name]
+                    }
+                    const spyPrice = point?.spyPrice
+                    return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
+                  }}
+                  contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+                />
+                <Legend />
                 <Line
                   type="monotone"
-                  dataKey="spyReturnPct"
-                  name="S&P 500 (SPY)"
-                  stroke="#888"
+                  dataKey="portfolioReturnPct"
+                  name="Portfolio"
+                  stroke="var(--color-primary)"
                   dot={false}
                   strokeWidth={2}
-                  strokeDasharray="4 4"
                 />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+                {showBenchmark && (
+                  <Line
+                    type="monotone"
+                    dataKey="spyReturnPct"
+                    name="S&P 500 (SPY)"
+                    stroke="#888"
+                    dot={false}
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-        <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
-        <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
+        <Card>
+          <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
+        </Card>
+        <Card>
+          <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
+        </Card>
       </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-400 border-b border-[var(--color-text)]/20">
-            <th className="py-1 pr-2">Ticker</th>
-            <th className="py-1 pr-2">Shares</th>
-            <th className="py-1 pr-2">Value</th>
-            <th className="py-1 pr-2">Gain/Loss</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.holdings.map((h) => {
-            const holdingUp = h.gainDollar >= 0
-            return (
-              <tr
-                key={h.id}
-                onClick={() => setSelectedTicker(h.ticker)}
-                className="border-b border-[var(--color-text)]/10 cursor-pointer hover:bg-[var(--color-text)]/10"
-              >
-                <td className="py-1 pr-2">{h.ticker}</td>
-                <td className="py-1 pr-2">{h.shares}</td>
-                <td className="py-1 pr-2">${h.currentValue.toFixed(2)}</td>
-                <td className={`py-1 pr-2 ${holdingUp ? 'text-green-500' : 'text-red-500'}`}>
-                  {holdingUp ? '+' : ''}${h.gainDollar.toFixed(2)} ({holdingUp ? '+' : ''}
+      <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
+        <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
+        <div>
+          {data.holdings.map((h) => (
+            <div
+              key={h.id}
+              onClick={() => setSelectedTicker(h.ticker)}
+              className="flex items-center justify-between px-4 py-3 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
+            >
+              <div>
+                <p className="font-semibold">{h.ticker}</p>
+                <p className="text-xs text-gray-500">{h.shares} shares</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium tabular-nums">${h.currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                <GainBadge value={h.gainDollar}>
+                  {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
                   {h.gainPct.toFixed(2)}%)
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                </GainBadge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {selectedTicker && <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />}
     </section>

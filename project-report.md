@@ -17,7 +17,7 @@ Build a personal website with two main sections:
 
 ## 2. New Objectives (this phase)
 
-1. **Redesign the look and feel to be inspired by Finary** (a wealth-tracking app). Research notes on Finary below (Section 8) — no Finary code, assets, or branding should be copied; this is stylistic/UX inspiration only (clean modern net-worth-style dashboard, strong data visualization, card-based layout, performance-focused).
+1. **Redesign the look and feel to be inspired by Finary** (a wealth-tracking app). Research notes on Finary below (Section 8) — no Finary code, assets, or branding should be copied; this is stylistic/UX inspiration only (clean modern net-worth-style dashboard, strong data visualization, card-based layout, performance-focused). **Built for the public homepage — see Section 4.9.** Scoped to the homepage only, by request; `/admin` keeps its plain functional look.
 2. **Build an editable "paper portfolio" performance tracker** — a simulated/hypothetical portfolio (not the same as the existing watchlist-style `portfolio` table) where the user can log positions (ticker, shares, entry price, entry date), and see overall performance over time, similar in spirit to how ARK Invest's fund pages (e.g. ark-funds.com/funds/arkk) show a fund's growth chart and holdings. This should be manageable from the `/admin` dashboard. **Built — see Section 4.9.**
 
 ---
@@ -85,12 +85,13 @@ Build a personal website with two main sections:
 - `app/api/portfolio/route.ts` — POST (add) and DELETE (remove) handlers. Both check the session cookie server-side (via `next/headers` `cookies()`) before using `supabaseAdmin` (service_role client) to write. Public visitors cannot write to this table under any circumstances — the anon key used by the public site only has SELECT access via RLS.
 
 ### 4.8 Full theme system
-- **`site_settings` Supabase table** (single row, `id=1`): `primary_color`, `background_color`, `text_color`, `font_family`, `spacing_scale` (compact/normal/spacious), `border_radius`.
-- **`app/api/settings/route.ts`**: GET is public (anyone loading the site needs to read the current theme); PUT is admin-only (session-cookie-gated, uses `supabaseAdmin`).
-- **`app/layout.tsx`**: server component, fetches settings on every request, computes a `themeStyle` object of CSS custom properties (`--color-bg`, `--color-text`, `--color-primary`, `--font-family`, `--border-radius`, `--spacing-unit` — the last one is a numeric multiplier: compact=0.75, normal=1, spacious=1.5), and applies them via the `style` prop on the `<html>` tag. Body background/text/font are set via `style` referencing `var(--color-bg)` etc.
-- **Components updated to use theme variables:** buttons (`bg-[var(--color-primary)]`), borders/backgrounds in `StockChart` and `PaperPortfolio` (`rounded-[var(--border-radius)]`, spacing via `calc(var(--spacing-unit)*Xrem)` in Tailwind arbitrary values).
-- **Intentionally NOT themed** (kept as fixed colors for functional/legibility reasons): green/red gain-loss indicators, the red "Remove" delete button, and form input fields (kept white background / black text regardless of theme, for contrast reliability).
-- **`ThemeEditor.tsx`** (in `/admin`): color pickers (`<input type="color">`) for primary/background/text, a `<select>` for border radius (0/4/8/16px presets), a `<select>` for a curated font list (sans-serif, serif, monospace, Georgia, Helvetica), and a `<select>` for spacing scale. Saves via PUT to `/api/settings`, then calls `router.refresh()`.
+- **`site_settings` Supabase table** (single row, `id=1`): `primary_color`, `background_color`, `text_color`, `card_background_color` (added for the Finary-style card layout, Section 4.9 — nullable), `font_family`, `spacing_scale` (compact/normal/spacious), `border_radius`.
+- **`app/api/settings/route.ts`**: GET is public (anyone loading the site needs to read the current theme); PUT is admin-only (session-cookie-gated, uses `supabaseAdmin`). The PUT handler just spreads whatever fields it's given into an `update()` call, so adding `card_background_color` required no route changes.
+- **`app/layout.tsx`**: server component, fetches settings on every request, computes a `themeStyle` object of CSS custom properties (`--color-bg`, `--color-text`, `--color-primary`, `--color-card`, `--font-family`, `--border-radius`, `--spacing-unit` — the last one is a numeric multiplier: compact=0.75, normal=1, spacious=1.5), and applies them via the `style` prop on the `<html>` tag. Body background/text/font are set via `style` referencing `var(--color-bg)` etc. **`--color-card`** is the one exception to "just use the DB value or a hardcoded fallback": if `card_background_color` is unset, it falls back to the CSS expression `color-mix(in srgb, var(--color-bg) 100%, white 8%)` — a lifted shade computed *from whatever background is picked*, rather than a hardcoded hex that could look wrong against a custom background. An admin can still override it with an explicit color.
+- **Components updated to use theme variables:** buttons (`bg-[var(--color-primary)]`), borders/backgrounds in `StockChart` and `PaperPortfolio` (`rounded-[var(--border-radius)]`, spacing via `calc(var(--spacing-unit)*Xrem)` in Tailwind arbitrary values, card surfaces via `bg-[var(--color-card)]`).
+- **Intentionally NOT themed** (kept as fixed colors for functional/legibility reasons): green/red gain-loss indicators (including the new pill-style `GainBadge`, Section 4.9), the red "Remove" delete button, and form input fields (kept white background / black text regardless of theme, for contrast reliability).
+- **`ThemeEditor.tsx`** (in `/admin`): color pickers (`<input type="color">`) for primary/background/text/**card background**, a `<select>` for border radius (0/4/8/16px presets), a `<select>` for a curated font list (sans-serif, serif, monospace, Georgia, Helvetica), and a `<select>` for spacing scale. Saves via PUT to `/api/settings`, then calls `router.refresh()`.
+- **Setup:** `supabase/site_settings_add_card_color.sql` needs to be run in the Supabase SQL editor for the card-background picker to save successfully (the column doesn't exist yet as of this writing — unlike `paper_portfolio.sector`, this one hasn't been auto-created). Until it's run, the picker still displays and the page still renders fine (falls back to the `color-mix` default), it just can't persist a custom card color yet.
 
 ### 4.9 Paper portfolio performance tracker
 - **Design decisions made for this feature** (resolving the open questions from the old Section 9.1): shown as a prominent section on the public homepage (not a separate route); overlays an S&P 500 (SPY) benchmark line from the start; admin enters a ticker, share count, and an entry date (defaults to today, but can be back-dated — see below).
@@ -111,7 +112,8 @@ Build a personal website with two main sections:
 - **Setup:** both `supabase/paper_portfolio.sql` and `supabase/paper_portfolio_add_sector.sql` have been run in the Supabase SQL editor — the table, its RLS policy, and the `sector` column all exist in production.
 - **Chart tooltip shows the underlying $ value alongside the % return** — hovering a point shows e.g. "Portfolio: 10.25% ($3,496)" and "S&P 500 (SPY): 0.02% ($772.67)". Chose the tooltip over a second Y-axis/extra visible lines because portfolio value (thousands of dollars) and SPY's price (hundreds of dollars) are on incompatible scales from the % lines — a second axis would visually clutter the chart without adding clarity. The performance API now returns raw `spyPrice` per point (previously computed internally but discarded) alongside the already-present `portfolioValue`.
 - **Admin dashboard has a "← Back to site" link** next to Log Out (mirroring the one already on `/admin/login`), so the owner isn't stuck without a nav path back to the public homepage.
-- Verified end-to-end in a real Chromium browser (Playwright): headline % changes across periods, SPY line/legend toggle correctly, exposure bars render with correct percentages/colors, clicking a holdings-table row opens that ticker's chart modal, and the "My Portfolio" heading is confirmed gone from the rendered page.
+- **Finary-inspired visual redesign (homepage only, by request — Section 2.1):** a `Card` wrapper (`bg-[var(--color-card)]`, Section 4.8) now holds the chart, the two exposure bars, and the holdings list as distinct surfaces against the page background, on a `max-w-3xl` centered column instead of full-bleed. The headline total value is a large (`text-5xl`/`6xl`) tabular-nums figure with an inline colored **pill badge** (`GainBadge`, green/red at ~15% opacity — not themed, same convention as other gain/loss indicators) showing the return for the currently-selected period, replacing the old plain colored text. Period buttons became a pill-shaped segmented control. The holdings table became a row-list (ticker + share count on the left, value + gain/loss pill on the right) rather than an HTML `<table>`, closer to how Finary-style dashboards present a holdings list. Colors/spacing/fonts still flow entirely through the existing admin-customizable theme system — nothing here is a hardcoded Finary palette; see the `card_background_color` addition in Section 4.8.
+- Verified end-to-end in a real Chromium browser (Playwright), at both desktop and mobile widths: headline % changes across periods, SPY line/legend toggle correctly, exposure bars render with correct percentages/colors, clicking a holdings-row opens that ticker's chart modal, the "My Portfolio" heading is confirmed gone from the rendered page, and the new "Card background" picker renders correctly in `/admin`.
 
 ---
 
@@ -133,11 +135,12 @@ RLS: public SELECT policy ("Enable read access for all users"). No public INSERT
 | primary_color | text | hex without `#` |
 | background_color | text | hex without `#` |
 | text_color | text | hex without `#` |
+| card_background_color | text | nullable; hex without `#`. Unset = falls back to a `color-mix()`-derived shade of `background_color` (see Section 4.8) |
 | font_family | text | CSS font-family value |
 | spacing_scale | text | `compact` \| `normal` \| `spacious` |
 | border_radius | text | CSS value e.g. `8px` |
 
-RLS: public SELECT policy. No public UPDATE policy — writes via `supabaseAdmin` in the settings PUT route only.
+RLS: public SELECT policy. No public UPDATE policy — writes via `supabaseAdmin` in the settings PUT route only. The `card_background_color` column is defined in `supabase/site_settings_add_card_color.sql`, which **has not yet been run** in the Supabase SQL editor as of this writing (unlike the other migrations in this doc) — run it before using the "Card background" picker in `/admin`.
 
 ### `paper_portfolio`
 | Column | Type | Notes |
@@ -216,7 +219,7 @@ Not started. Finnhub has an earnings-calendar endpoint that may work on the free
 Not started. Originally scoped as a separate route/tab displaying research papers and modeling work — titles, short descriptions, and links or embedded PDFs, likely stored directly in the GitHub repo or Supabase storage rather than a separate hosting service.
 
 ### 9.5 Broader Finary-inspired redesign
-Not started beyond the paper portfolio section's headline-number treatment (Section 4.9). Layout/typography pass across the rest of the homepage (card structure, spacing rhythm, dark-mode-friendly palette) still open — see Section 8.
+**Built for the public homepage — see Section 4.9** (card-based layout, hero number, pill badges for gains/losses, row-list holdings). By explicit request, scoped to the homepage only — `/admin` was left with its plain functional look, and could get the same treatment later if wanted.
 
 ---
 
@@ -256,6 +259,7 @@ lib/
 supabase/
   paper_portfolio.sql             (manual migration — table + RLS policy for paper_portfolio; run in Supabase SQL editor)
   paper_portfolio_add_sector.sql  (manual migration — adds the sector column; run in Supabase SQL editor)
+  site_settings_add_card_color.sql (manual migration — adds card_background_color; NOT yet run, see Section 5)
 middleware.ts             (protects /admin/* routes)
 ```
 
