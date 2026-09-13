@@ -308,11 +308,9 @@ export default function PaperPortfolio() {
           </Card>
         </div>
 
-        <div>
-          <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-1">
-            <DailyBriefing />
-            <EarningsCalendar />
-          </div>
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <DailyBriefing />
+          <EarningsCalendar />
         </div>
       </div>
 
