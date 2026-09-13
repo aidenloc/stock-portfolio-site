@@ -16,6 +16,7 @@ type Settings = {
   background_color: string
   text_color: string
   card_background_color: string | null
+  card_opacity: number | null
   font_family: string
   spacing_scale: string
   border_radius: string
@@ -50,7 +51,7 @@ export default function ThemeEditor() {
 
   if (!settings) return <p className="text-gray-400">Loading theme settings...</p>
 
-  function updateField(field: keyof Settings, value: string) {
+  function updateField<K extends keyof Settings>(field: K, value: Settings[K]) {
     setSettings((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
@@ -95,6 +96,20 @@ export default function ThemeEditor() {
             className="w-full h-10 rounded cursor-pointer"
           />
           <p className="text-xs text-gray-500 mt-1">Background for dashboard cards (chart, exposure, holdings). Defaults to a subtle shade of the page background until set.</p>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">
+            Card transparency — {settings.card_opacity ?? 85}% opaque
+          </label>
+          <input
+            type="range"
+            min={20}
+            max={100}
+            value={settings.card_opacity ?? 85}
+            onChange={(e) => updateField('card_opacity', Number(e.target.value))}
+            className="w-full cursor-pointer"
+          />
+          <p className="text-xs text-gray-500 mt-1">Lower values let the background glow show through cards.</p>
         </div>
         <div>
           <label className="block text-sm mb-1">Border radius</label>
