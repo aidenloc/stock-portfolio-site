@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -11,6 +11,10 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts'
+
+const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
+type Period = (typeof PERIODS)[number]
+const INTRADAY_PERIODS: Period[] = ['1D', '1W']
 
 type Holding = {
   id: number
@@ -25,7 +29,7 @@ type Holding = {
 }
 
 type SeriesPoint = {
-  date: string
+  time: number
   portfolioValue: number
   portfolioReturnPct: number
   spyReturnPct: number | null
@@ -39,22 +43,35 @@ type Performance = {
   totalReturnPct: number
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
+function formatLabel(timestamp: number, period: Period): string {
+  const date = new Date(timestamp * 1000)
+  if (INTRADAY_PERIODS.includes(period)) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
 export default function PaperPortfolio() {
+  const [period, setPeriod] = useState<Period>('1M')
   const [data, setData] = useState<Performance | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch('/api/paper-portfolio/performance')
-      .then((res) => res.json())
-      .then((d) => setData(d))
-      .finally(() => setLoading(false))
-  }, [])
+  const fetchPerformance = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/paper-portfolio/performance?period=${period}`)
+      const d = await res.json()
+      setData(d)
+    } finally {
+      setLoading(false)
+    }
+  }, [period])
 
-  if (loading) return null
+  useEffect(() => {
+    fetchPerformance()
+  }, [fetchPerformance])
+
+  if (!data && loading) return null
   if (!data || !data.holdings || data.holdings.length === 0) return null
 
   const isUp = data.totalReturnPct >= 0
@@ -74,37 +91,55 @@ export default function PaperPortfolio() {
         </span>
       </div>
 
+      <div className="flex gap-2 mb-4">
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`px-3 py-1 rounded-[var(--border-radius)] text-sm ${
+              period === p ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-text)]/10'
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
       <div className="h-72 mb-6 border border-[var(--color-text)]/20 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1rem)]">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data.series}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="#888" minTickGap={40} />
-            <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-            <Tooltip
-              labelFormatter={(d) => formatDate(String(d))}
-              formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
-              contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="portfolioReturnPct"
-              name="Portfolio"
-              stroke="var(--color-primary)"
-              dot={false}
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="spyReturnPct"
-              name="S&P 500 (SPY)"
-              stroke="#888"
-              dot={false}
-              strokeWidth={2}
-              strokeDasharray="4 4"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data.series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
+              <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+              <Tooltip
+                labelFormatter={(t) => formatLabel(Number(t), period)}
+                formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
+                contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="portfolioReturnPct"
+                name="Portfolio"
+                stroke="var(--color-primary)"
+                dot={false}
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="spyReturnPct"
+                name="S&P 500 (SPY)"
+                stroke="#888"
+                dot={false}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <table className="w-full text-sm">

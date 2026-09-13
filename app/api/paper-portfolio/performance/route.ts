@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-import { fetchYahooHistory, periodSince, dateKey, type HistoryPoint } from '@/lib/yahooHistory'
+import { fetchYahooHistory, dateKey, type HistoryPoint, type Period as YahooPeriod } from '@/lib/yahooHistory'
 
 const BENCHMARK_TICKER = 'SPY'
+
+// UI period label -> Yahoo range bucket. "1W" maps to Yahoo's 5-trading-day
+// bucket since Yahoo has no native 1-calendar-week range.
+const PERIOD_MAP: Record<string, YahooPeriod> = {
+  '1D': '1D',
+  '1W': '5D',
+  '1M': '1M',
+  '6M': '6M',
+  YTD: 'YTD',
+  '1Y': '1Y',
+}
 
 type Holding = {
   id: number
@@ -12,17 +23,25 @@ type Holding = {
   entry_date: string
 }
 
-// Forward-fills: returns the most recent known price at or before `key`.
-function priceAt(series: Map<string, number>, sortedKeys: string[], key: string): number | undefined {
+// Forward-fills: latest known price at or before `targetTime`. `points` must be sorted ascending by time.
+function priceAtOrBefore(points: HistoryPoint[], targetTime: number): number | undefined {
   let result: number | undefined
-  for (const k of sortedKeys) {
-    if (k > key) break
-    if (series.has(k)) result = series.get(k)
+  for (const p of points) {
+    if (p.time > targetTime) break
+    result = p.price
   }
   return result
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const periodParam = searchParams.get('period') || '1M'
+  const yahooPeriod = PERIOD_MAP[periodParam]
+
+  if (!yahooPeriod) {
+    return NextResponse.json({ error: 'Invalid period' }, { status: 400 })
+  }
+
   const { data: holdings, error } = await supabase
     .from('paper_portfolio')
     .select('*')
@@ -36,65 +55,54 @@ export async function GET() {
     return NextResponse.json({ holdings: [], series: [], totalValue: 0, totalCost: 0, totalReturnPct: 0 })
   }
 
-  const earliestEntryDate = holdings.reduce((min, h) => (h.entry_date < min ? h.entry_date : min), holdings[0].entry_date)
-  const period = periodSince(new Date(earliestEntryDate))
   const uniqueTickers = Array.from(new Set([...holdings.map((h) => h.ticker), BENCHMARK_TICKER]))
 
   const results = await Promise.allSettled(
-    uniqueTickers.map(async (ticker) => [ticker, await fetchYahooHistory(ticker, period)] as [string, HistoryPoint[]])
+    uniqueTickers.map(async (ticker) => [ticker, await fetchYahooHistory(ticker, yahooPeriod)] as [string, HistoryPoint[]])
   )
 
-  const priceSeries = new Map<string, Map<string, number>>()
-  const sortedKeysByTicker = new Map<string, string[]>()
-
+  const pointsByTicker = new Map<string, HistoryPoint[]>()
   for (const result of results) {
     if (result.status !== 'fulfilled') continue
     const [ticker, points] = result.value
-    const series = new Map<string, number>()
-    for (const p of points) series.set(dateKey(p.time), p.price)
-    priceSeries.set(ticker, series)
-    sortedKeysByTicker.set(ticker, Array.from(series.keys()).sort())
+    pointsByTicker.set(ticker, [...points].sort((a, b) => a.time - b.time))
   }
 
-  const spySeries = priceSeries.get(BENCHMARK_TICKER)
-  const spyKeys = sortedKeysByTicker.get(BENCHMARK_TICKER) ?? []
+  const spyPoints = pointsByTicker.get(BENCHMARK_TICKER)
 
-  const allDateKeys = Array.from(
-    new Set(Array.from(priceSeries.values()).flatMap((s) => Array.from(s.keys())))
-  )
-    .filter((k) => k >= earliestEntryDate)
-    .sort()
+  // SPY trades every session, so its own timestamps make the fullest backbone for the window.
+  const axisTimes = spyPoints?.map((p) => p.time) ?? []
 
-  const spyBaseline = spySeries && spyKeys.length ? priceAt(spySeries, spyKeys, allDateKeys[0]) : undefined
-
-  const series = allDateKeys.map((date) => {
+  const rawSeries = axisTimes.map((t) => {
     let value = 0
-    let cost = 0
     for (const h of holdings as Holding[]) {
-      if (h.entry_date > date) continue
-      const tSeries = priceSeries.get(h.ticker)
-      const tKeys = sortedKeysByTicker.get(h.ticker)
-      const price = tSeries && tKeys ? priceAt(tSeries, tKeys, date) ?? h.entry_price : h.entry_price
+      if (h.entry_date > dateKey(t)) continue
+      const points = pointsByTicker.get(h.ticker)
+      const price = (points ? priceAtOrBefore(points, t) : undefined) ?? h.entry_price
       value += h.shares * price
-      cost += h.shares * h.entry_price
     }
-
-    const spyPrice = spySeries && spyKeys.length ? priceAt(spySeries, spyKeys, date) : undefined
-    const spyReturnPct = spyPrice && spyBaseline ? (spyPrice / spyBaseline - 1) * 100 : null
-
-    return {
-      date,
-      portfolioValue: value,
-      portfolioReturnPct: cost > 0 ? ((value - cost) / cost) * 100 : 0,
-      spyReturnPct,
-    }
+    const spyPrice = spyPoints ? priceAtOrBefore(spyPoints, t) : undefined
+    return { time: t, value, spyPrice }
   })
 
+  // Trim leading points where nothing was held yet, then rebase returns to 0% at
+  // the window's first point (so each period button shows performance *during
+  // that window*, not the since-inception curve zoomed in).
+  const firstActiveIndex = rawSeries.findIndex((pt) => pt.value > 0)
+  const activeSeries = firstActiveIndex === -1 ? [] : rawSeries.slice(firstActiveIndex)
+  const baseValue = activeSeries[0]?.value
+  const baseSpy = activeSeries[0]?.spyPrice
+
+  const series = activeSeries.map((pt) => ({
+    time: pt.time,
+    portfolioValue: pt.value,
+    portfolioReturnPct: baseValue ? ((pt.value - baseValue) / baseValue) * 100 : 0,
+    spyReturnPct: baseSpy && pt.spyPrice ? ((pt.spyPrice - baseSpy) / baseSpy) * 100 : null,
+  }))
+
   const holdingsBreakdown = (holdings as Holding[]).map((h) => {
-    const tSeries = priceSeries.get(h.ticker)
-    const tKeys = sortedKeysByTicker.get(h.ticker)
-    const lastKey = tKeys && tKeys.length ? tKeys[tKeys.length - 1] : undefined
-    const currentPrice = tSeries && lastKey ? tSeries.get(lastKey) ?? h.entry_price : h.entry_price
+    const points = pointsByTicker.get(h.ticker)
+    const currentPrice = points && points.length ? points[points.length - 1].price : h.entry_price
     const currentValue = h.shares * currentPrice
     const costBasis = h.shares * h.entry_price
     return {
