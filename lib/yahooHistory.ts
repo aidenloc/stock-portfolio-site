@@ -56,3 +56,14 @@ export function periodSince(startDate: Date): Period {
 export function dateKey(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toISOString().slice(0, 10)
 }
+
+// Latest close at or before targetDate (YYYY-MM-DD) — the trading day itself
+// if the market was open, otherwise the prior trading day.
+export function priceOnOrBefore(points: HistoryPoint[], targetDate: string): number | undefined {
+  let result: number | undefined
+  for (const p of [...points].sort((a, b) => a.time - b.time)) {
+    if (dateKey(p.time) > targetDate) break
+    result = p.price
+  }
+  return result
+}
