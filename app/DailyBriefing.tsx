@@ -23,7 +23,7 @@ export default function DailyBriefing() {
   if (!data || !data.content || data.content.length === 0) return null
 
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.25rem)] lg:sticky lg:top-6">
+    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.25rem)]">
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Daily Briefing</p>
       {data.briefing_date && <p className="text-xs text-gray-600 mb-4">{formatBriefingDate(data.briefing_date)}</p>}
 

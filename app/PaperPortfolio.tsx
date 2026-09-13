@@ -197,7 +197,7 @@ export default function PaperPortfolio() {
       </div>
       <p className="text-xs text-gray-500 mb-8">Simulated portfolio, tracked for performance only — not real money.</p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <Card className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -315,7 +315,7 @@ export default function PaperPortfolio() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <DailyBriefing />
           <EarningsCalendar />
         </div>
