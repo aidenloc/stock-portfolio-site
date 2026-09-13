@@ -39,16 +39,13 @@ Build a personal website with two main sections:
 ## 4. Features Built So Far
 
 ### 4.1 Public homepage (`app/page.tsx`)
-- Server component. Fetches the `portfolio` table from Supabase (public anon client) and passes it to `PriceList`.
-- Renders the `PaperPortfolio` section (Section 4.9) above the live price list.
+- Plain sync component — no server-side data fetching happens here anymore (see 4.2). Renders `PaperPortfolio` (Section 4.9), which does its own client-side fetching.
 - Has a small, deliberately understated "Admin" text link at the bottom linking to `/admin/login` (not a prominent button — this is for the site owner, not visitors).
 
-### 4.2 Live price list (`app/PriceList.tsx`)
-- Client component. For each ticker in the portfolio, fetches `/api/quote?ticker=X` (Finnhub).
-- Auto-refreshes every 15 seconds, but ONLY while `isMarketOpen()` returns true (checks NYSE hours: Mon–Fri, 9:30am–4:00pm America/New_York time, converted via `toLocaleString` with timeZone option).
-- Shows a status line: "🟢 Market open — auto-refreshing every 15s" or "⚪ Market closed — showing last available prices."
-- Green/red color coding for gains/losses (intentionally NOT themed — these are functional signals, not brand colors).
-- Clicking a ticker row opens `StockChart` in a modal (tracked via `selectedTicker` state).
+### 4.2 Removed: the original live watchlist ("My Portfolio" / `app/PriceList.tsx`)
+- The original design (live-quote watchlist with 15s auto-refresh while the market is open, `isMarketOpen()` NYSE-hours check, green/red gain coloring) has been **removed from the homepage and deleted** (`app/PriceList.tsx` no longer exists) — the paper portfolio tracker (Section 4.9) is now the homepage's only holdings display, per this phase's redesign.
+- The underlying `portfolio` Supabase table, `AdminPortfolioForm.tsx`, and `app/api/portfolio/route.ts` were **left in place** in `/admin` (not asked to be removed) — the owner can still manage that table, it's just no longer rendered publicly. If it's confirmed fully unused going forward, it'd be reasonable to remove those too.
+- `StockChart.tsx` (Section 4.3) — the modal chart component this watchlist used — is **still used**, now opened by clicking a ticker row in the paper portfolio's holdings table instead (Section 4.9).
 
 ### 4.3 Interactive stock charts (`app/StockChart.tsx`)
 - Modal overlay. Range buttons: 1D, 5D, 1M, 6M, YTD, 1Y.
@@ -91,7 +88,7 @@ Build a personal website with two main sections:
 - **`site_settings` Supabase table** (single row, `id=1`): `primary_color`, `background_color`, `text_color`, `font_family`, `spacing_scale` (compact/normal/spacious), `border_radius`.
 - **`app/api/settings/route.ts`**: GET is public (anyone loading the site needs to read the current theme); PUT is admin-only (session-cookie-gated, uses `supabaseAdmin`).
 - **`app/layout.tsx`**: server component, fetches settings on every request, computes a `themeStyle` object of CSS custom properties (`--color-bg`, `--color-text`, `--color-primary`, `--font-family`, `--border-radius`, `--spacing-unit` — the last one is a numeric multiplier: compact=0.75, normal=1, spacious=1.5), and applies them via the `style` prop on the `<html>` tag. Body background/text/font are set via `style` referencing `var(--color-bg)` etc.
-- **Components updated to use theme variables:** buttons (`bg-[var(--color-primary)]`), borders/backgrounds in `PriceList`, `StockChart`, and `PaperPortfolio` (`rounded-[var(--border-radius)]`, spacing via `calc(var(--spacing-unit)*Xrem)` in Tailwind arbitrary values).
+- **Components updated to use theme variables:** buttons (`bg-[var(--color-primary)]`), borders/backgrounds in `StockChart` and `PaperPortfolio` (`rounded-[var(--border-radius)]`, spacing via `calc(var(--spacing-unit)*Xrem)` in Tailwind arbitrary values).
 - **Intentionally NOT themed** (kept as fixed colors for functional/legibility reasons): green/red gain-loss indicators, the red "Remove" delete button, and form input fields (kept white background / black text regardless of theme, for contrast reliability).
 - **`ThemeEditor.tsx`** (in `/admin`): color pickers (`<input type="color">`) for primary/background/text, a `<select>` for border radius (0/4/8/16px presets), a `<select>` for a curated font list (sans-serif, serif, monospace, Georgia, Helvetica), and a `<select>` for spacing scale. Saves via PUT to `/api/settings`, then calls `router.refresh()`.
 
@@ -108,10 +105,13 @@ Build a personal website with two main sections:
   - Also returns a holdings breakdown (current price/value, $ and % gain per position).
   - Note: because the underlying data is daily (or weekly for 1Y/YTD spans that run long), `1D`/`1W` show Yahoo's intraday points (5m/15m) but a portfolio that hasn't traded within the window will look flat — this is a NAV-style tracker, not a live intraday ticker.
 - **`app/admin/PaperPortfolioForm.tsx`** — admin UI: ticker, shares, and entry-date (`<input type="date">`, max=today) inputs, list of current holdings with entry price/date and a remove button. Composed into `app/admin/page.tsx` alongside the existing forms.
-- **`app/PaperPortfolio.tsx`** — public homepage component: headline total value + return % **for the currently selected period** (e.g. "-5.05% (1W)" — this updates as the period buttons are clicked, it does not stay fixed to an all-time figure), period buttons (1D/1W/1M/6M/YTD/1Y, mirroring `StockChart.tsx`'s pattern) that re-fetch the performance endpoint, an "S&P 500" toggle button that shows/hides the dashed SPY benchmark line (and its legend entry) without refetching, a Recharts line chart (portfolio % return vs. SPY % return for the selected window), and a holdings table (ticker, shares, value, gain/loss $ and % — this one stays lifetime/all-time per position, since it's a factsheet-style breakdown rather than the chart). Renders nothing if there are no holdings yet or the table isn't reachable, so it fails safe on the public homepage. Composed into `app/page.tsx` above the existing live price list. Verified in a real Chromium browser (Playwright) — screenshots confirmed the headline % changes across periods, and the SPY line/legend correctly disappear and reappear on toggle.
-- **Setup:** `supabase/paper_portfolio.sql` has been run in the Supabase SQL editor — the table and its RLS policy exist in production. (Kept in the repo as the migration record — same manual-migration pattern used for the existing tables, see Section 7.5 on RLS being per-table.)
+- **`app/PaperPortfolio.tsx`** — public homepage component: headline total value + return % **for the currently selected period** (e.g. "-5.05% (1W)" — this updates as the period buttons are clicked, it does not stay fixed to an all-time figure), period buttons (1D/1W/1M/6M/YTD/1Y, mirroring `StockChart.tsx`'s pattern) that re-fetch the performance endpoint, an "S&P 500" toggle button that shows/hides the dashed SPY benchmark line (and its legend entry) without refetching, a Recharts line chart (portfolio % return vs. SPY % return for the selected window), a **Market Exposure section** (see below), and a holdings table (ticker, shares, value, gain/loss $ and % — this one stays lifetime/all-time per position, since it's a factsheet-style breakdown rather than the chart) whose **rows are clickable**: clicking a ticker opens the same `StockChart` modal the old watchlist used, via a `selectedTicker` state (identical pattern to the removed `PriceList`). Renders nothing if there are no holdings yet or the table isn't reachable, so it fails safe on the public homepage. Composed into `app/page.tsx`, now the homepage's only holdings display (Section 4.2).
+- **Market Exposure section** — two horizontal stacked allocation bars ("by holding" and "by sector"), each with a swatch legend showing label + %. Followed this repo's `dataviz` skill guidance: part-to-whole data defaults to a **stacked bar**, not a pie chart (pies aren't even in the skill's form table); colors come from the skill's validated dark-mode categorical palette (8 fixed hues, e.g. blue `#3987e5`, orange `#d95926`, ... — see `references/palette.md`), assigned by each ticker/sector's **first-seen order** in the holdings list (a stable identity), not by its sorted display rank, so a holding doesn't change color as prices move it up or down the bar. Beyond the 7-slice token ceiling the skill specifies, the remainder folds into a muted-gray "Other" slice. Segments have the skill's 2px surface gap between them (via flex `gap`), and "Unknown" sector is used as a fallback bucket for a holding whose sector lookup failed.
+- **Sector data (`paper_portfolio.sector`)** — added via `supabase/paper_portfolio_add_sector.sql` migration. **Fetched once and cached, not looked up on every page load**, per the user's explicit ask: `lib/sector.ts` calls Finnhub's free `/stock/profile2` endpoint (returns `finnhubIndustry`) at **add-time** in the POST route, and the performance route does a **one-time backfill** for any older row where `sector` is still `null` (e.g. rows added before this existed), persisting the result via `supabaseAdmin` so it's never re-fetched for that ticker again. A brand-new position added later always fetches its own sector at insert time either way.
+- **Setup:** both `supabase/paper_portfolio.sql` and `supabase/paper_portfolio_add_sector.sql` have been run in the Supabase SQL editor — the table, its RLS policy, and the `sector` column all exist in production.
 - **Chart tooltip shows the underlying $ value alongside the % return** — hovering a point shows e.g. "Portfolio: 10.25% ($3,496)" and "S&P 500 (SPY): 0.02% ($772.67)". Chose the tooltip over a second Y-axis/extra visible lines because portfolio value (thousands of dollars) and SPY's price (hundreds of dollars) are on incompatible scales from the % lines — a second axis would visually clutter the chart without adding clarity. The performance API now returns raw `spyPrice` per point (previously computed internally but discarded) alongside the already-present `portfolioValue`.
 - **Admin dashboard has a "← Back to site" link** next to Log Out (mirroring the one already on `/admin/login`), so the owner isn't stuck without a nav path back to the public homepage.
+- Verified end-to-end in a real Chromium browser (Playwright): headline % changes across periods, SPY line/legend toggle correctly, exposure bars render with correct percentages/colors, clicking a holdings-table row opens that ticker's chart modal, and the "My Portfolio" heading is confirmed gone from the rendered page.
 
 ---
 
@@ -146,10 +146,11 @@ RLS: public SELECT policy. No public UPDATE policy — writes via `supabaseAdmin
 | created_at | timestamptz | default `now()` |
 | ticker | text | uppercase stock symbol |
 | shares | numeric | share count |
-| entry_price | numeric | live Finnhub quote at the moment the admin added the position |
-| entry_date | date | the day the position was added (today only — no back-dating) |
+| entry_price | numeric | live Finnhub quote if added at today's date, else that day's Yahoo closing price (back-dated entries) |
+| entry_date | date | defaults to today; admin can pick any past date to back-date a position |
+| sector | text | nullable; Finnhub `finnhubIndustry`, fetched once at add-time (or backfilled once for older rows) and cached — never re-fetched on page load |
 
-RLS: public SELECT policy. No public INSERT/UPDATE/DELETE policy — writes via `supabaseAdmin` in `app/api/paper-portfolio/route.ts` only. Schema/policy defined in `supabase/paper_portfolio.sql` — **must be run manually in the Supabase SQL editor** (not yet applied as of this writing).
+RLS: public SELECT policy. No public INSERT/UPDATE/DELETE policy — writes via `supabaseAdmin` in `app/api/paper-portfolio/route.ts` (and the performance route's one-time sector backfill) only. Schema/policy defined in `supabase/paper_portfolio.sql`; the `sector` column added later via `supabase/paper_portfolio_add_sector.sql`. Both have been run in the Supabase SQL editor and are live in production.
 
 ---
 
@@ -243,8 +244,7 @@ app/
     ThemeEditor.tsx
   page.tsx
   layout.tsx
-  PriceList.tsx
-  StockChart.tsx
+  StockChart.tsx          (still used — now opened from PaperPortfolio's holdings table, not the removed PriceList)
   PaperPortfolio.tsx
   globals.css
 lib/
@@ -252,8 +252,10 @@ lib/
   supabaseAdmin.ts      (service_role client — server-only, never import into client components)
   session.ts            (session token create/verify — deliberately non-cryptographic, see Section 7.6)
   yahooHistory.ts        (shared Yahoo Finance history fetch/parse, used by /api/history and /api/paper-portfolio/performance)
+  sector.ts               (Finnhub sector/industry lookup — called at add-time and for the one-time backfill, never per page load)
 supabase/
-  paper_portfolio.sql    (manual migration — table + RLS policy for paper_portfolio; run in Supabase SQL editor)
+  paper_portfolio.sql             (manual migration — table + RLS policy for paper_portfolio; run in Supabase SQL editor)
+  paper_portfolio_add_sector.sql  (manual migration — adds the sector column; run in Supabase SQL editor)
 middleware.ts             (protects /admin/* routes)
 ```
 

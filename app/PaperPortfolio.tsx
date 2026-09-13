@@ -11,10 +11,26 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts'
+import StockChart from './StockChart'
 
 const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
 type Period = (typeof PERIODS)[number]
 const INTRADAY_PERIODS: Period[] = ['1D', '1W']
+
+// Validated categorical palette (dark-surface steps) from the site's dataviz
+// guidelines — fixed hue order, assigned by entity identity, never by sort rank.
+const CATEGORICAL_COLORS = [
+  '#3987e5', // blue
+  '#d95926', // orange
+  '#199e70', // aqua
+  '#c98500', // yellow
+  '#d55181', // magenta
+  '#008300', // green
+  '#9085e9', // violet
+  '#e66767', // red
+]
+const OTHER_COLOR = '#6b6b68'
+const MAX_EXPOSURE_SLICES = 7
 
 type Holding = {
   id: number
@@ -22,6 +38,7 @@ type Holding = {
   shares: number
   entryPrice: number
   entryDate: string
+  sector: string | null
   currentPrice: number
   currentValue: number
   gainDollar: number
@@ -44,6 +61,58 @@ type Performance = {
   totalReturnPct: number
 }
 
+type ExposureSlice = { label: string; value: number; pct: number; color: string }
+
+// Groups holdings by keyFn (ticker or sector), sorts largest-first for display,
+// and folds anything past the token ceiling into "Other". Color is assigned by
+// each entity's first-seen order in `holdings` (stable identity), not by its
+// sorted display rank, so a ticker doesn't change color as prices move it around.
+function buildExposure(holdings: Holding[], keyFn: (h: Holding) => string): ExposureSlice[] {
+  const identityOrder: string[] = []
+  const totals = new Map<string, number>()
+  for (const h of holdings) {
+    const key = keyFn(h)
+    if (!totals.has(key)) identityOrder.push(key)
+    totals.set(key, (totals.get(key) ?? 0) + h.currentValue)
+  }
+  const total = Array.from(totals.values()).reduce((a, b) => a + b, 0)
+
+  const colorByKey = new Map<string, string>()
+  identityOrder.forEach((key, i) => colorByKey.set(key, CATEGORICAL_COLORS[i % CATEGORICAL_COLORS.length]))
+
+  const sorted = Array.from(totals.entries())
+    .map(([label, value]) => ({ label, value, pct: total > 0 ? (value / total) * 100 : 0, color: colorByKey.get(label)! }))
+    .sort((a, b) => b.value - a.value)
+
+  if (sorted.length <= MAX_EXPOSURE_SLICES) return sorted
+
+  const top = sorted.slice(0, MAX_EXPOSURE_SLICES)
+  const restValue = sorted.slice(MAX_EXPOSURE_SLICES).reduce((sum, s) => sum + s.value, 0)
+  top.push({ label: 'Other', value: restValue, pct: total > 0 ? (restValue / total) * 100 : 0, color: OTHER_COLOR })
+  return top
+}
+
+function ExposureBar({ title, slices }: { title: string; slices: ExposureSlice[] }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400 mb-2">{title}</p>
+      <div className="flex gap-[2px] h-6 rounded-[var(--border-radius)] overflow-hidden mb-2">
+        {slices.map((s) => (
+          <div key={s.label} style={{ width: `${s.pct}%`, backgroundColor: s.color }} title={`${s.label}: ${s.pct.toFixed(1)}%`} />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+        {slices.map((s) => (
+          <span key={s.label} className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+            {s.label} ({s.pct.toFixed(1)}%)
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function formatLabel(timestamp: number, period: Period): string {
   const date = new Date(timestamp * 1000)
   if (INTRADAY_PERIODS.includes(period)) {
@@ -57,6 +126,7 @@ export default function PaperPortfolio() {
   const [data, setData] = useState<Performance | null>(null)
   const [loading, setLoading] = useState(true)
   const [showBenchmark, setShowBenchmark] = useState(true)
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true)
@@ -78,6 +148,9 @@ export default function PaperPortfolio() {
 
   const periodReturnPct = data.series.length ? data.series[data.series.length - 1].portfolioReturnPct : 0
   const isUp = periodReturnPct >= 0
+
+  const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
+  const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
@@ -164,6 +237,11 @@ export default function PaperPortfolio() {
         )}
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+        <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
+        <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
+      </div>
+
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-gray-400 border-b border-[var(--color-text)]/20">
@@ -177,7 +255,11 @@ export default function PaperPortfolio() {
           {data.holdings.map((h) => {
             const holdingUp = h.gainDollar >= 0
             return (
-              <tr key={h.id} className="border-b border-[var(--color-text)]/10">
+              <tr
+                key={h.id}
+                onClick={() => setSelectedTicker(h.ticker)}
+                className="border-b border-[var(--color-text)]/10 cursor-pointer hover:bg-[var(--color-text)]/10"
+              >
                 <td className="py-1 pr-2">{h.ticker}</td>
                 <td className="py-1 pr-2">{h.shares}</td>
                 <td className="py-1 pr-2">${h.currentValue.toFixed(2)}</td>
@@ -190,6 +272,8 @@ export default function PaperPortfolio() {
           })}
         </tbody>
       </table>
+
+      {selectedTicker && <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />}
     </section>
   )
 }

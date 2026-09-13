@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { fetchYahooHistory, dateKey, type HistoryPoint, type Period as YahooPeriod } from '@/lib/yahooHistory'
+import { fetchSector } from '@/lib/sector'
 
 const BENCHMARK_TICKER = 'SPY'
 
@@ -21,6 +23,7 @@ type Holding = {
   shares: number
   entry_price: number
   entry_date: string
+  sector: string | null
 }
 
 // Forward-fills: latest known price at or before `targetTime`. `points` must be sorted ascending by time.
@@ -55,7 +58,30 @@ export async function GET(request: Request) {
     return NextResponse.json({ holdings: [], series: [], totalValue: 0, totalCost: 0, totalReturnPct: 0 })
   }
 
-  const uniqueTickers = Array.from(new Set([...holdings.map((h) => h.ticker), BENCHMARK_TICKER]))
+  const typedHoldings = holdings as Holding[]
+
+  // One-time backfill for rows added before sector tracking existed (or where
+  // the Finnhub lookup failed at add-time) — persisted so this only runs once
+  // per ticker, not on every page load.
+  const missingSectorTickers = Array.from(new Set(typedHoldings.filter((h) => !h.sector).map((h) => h.ticker)))
+  if (missingSectorTickers.length > 0) {
+    const sectorEntries = await Promise.all(
+      missingSectorTickers.map(async (ticker) => [ticker, await fetchSector(ticker)] as const)
+    )
+    const sectorByTicker = new Map(sectorEntries)
+
+    await Promise.all(
+      typedHoldings
+        .filter((h) => !h.sector && sectorByTicker.get(h.ticker))
+        .map((h) => supabaseAdmin.from('paper_portfolio').update({ sector: sectorByTicker.get(h.ticker) }).eq('id', h.id))
+    )
+
+    for (const h of typedHoldings) {
+      if (!h.sector) h.sector = sectorByTicker.get(h.ticker) ?? null
+    }
+  }
+
+  const uniqueTickers = Array.from(new Set([...typedHoldings.map((h) => h.ticker), BENCHMARK_TICKER]))
 
   const results = await Promise.allSettled(
     uniqueTickers.map(async (ticker) => [ticker, await fetchYahooHistory(ticker, yahooPeriod)] as [string, HistoryPoint[]])
@@ -75,7 +101,7 @@ export async function GET(request: Request) {
 
   const rawSeries = axisTimes.map((t) => {
     let value = 0
-    for (const h of holdings as Holding[]) {
+    for (const h of typedHoldings) {
       if (h.entry_date > dateKey(t)) continue
       const points = pointsByTicker.get(h.ticker)
       const price = (points ? priceAtOrBefore(points, t) : undefined) ?? h.entry_price
@@ -101,7 +127,7 @@ export async function GET(request: Request) {
     spyReturnPct: baseSpy && pt.spyPrice ? ((pt.spyPrice - baseSpy) / baseSpy) * 100 : null,
   }))
 
-  const holdingsBreakdown = (holdings as Holding[]).map((h) => {
+  const holdingsBreakdown = typedHoldings.map((h) => {
     const points = pointsByTicker.get(h.ticker)
     const currentPrice = points && points.length ? points[points.length - 1].price : h.entry_price
     const currentValue = h.shares * currentPrice
@@ -112,6 +138,7 @@ export async function GET(request: Request) {
       shares: h.shares,
       entryPrice: h.entry_price,
       entryDate: h.entry_date,
+      sector: h.sector,
       currentPrice,
       currentValue,
       gainDollar: currentValue - costBasis,

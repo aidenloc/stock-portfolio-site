@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { isValidSessionToken } from '@/lib/session'
 import { fetchYahooHistory, periodSince, priceOnOrBefore } from '@/lib/yahooHistory'
+import { fetchSector } from '@/lib/sector'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -76,11 +77,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not find a price for this ticker on that date' }, { status: 400 })
   }
 
+  const sector = await fetchSector(upperTicker)
+
   const { error } = await supabaseAdmin.from('paper_portfolio').insert({
     ticker: upperTicker,
     shares: sharesNum,
     entry_price: entryPrice,
     entry_date: resolvedEntryDate,
+    sector,
   })
 
   if (error) {
