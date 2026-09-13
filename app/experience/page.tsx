@@ -43,35 +43,69 @@ function Entry({
   )
 }
 
+function FileIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  )
+}
+
+function LinkedInIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56z" />
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 6-10 7L2 6" />
+    </svg>
+  )
+}
+
 export default function ExperiencePage() {
   return (
     <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
       <Header />
 
-      <div className="text-center mb-16">
+      <div className="max-w-3xl mb-16">
         <h1 className="font-serif text-6xl mb-4">Aiden Loc</h1>
-        <div className="flex flex-wrap justify-center gap-6 text-sm">
-          <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400">
+        <div className="flex flex-wrap gap-6 text-sm">
+          <a
+            href="/resume.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
+          >
+            <FileIcon />
             Resume
-          </a>
-          <a href="mailto:aiden.s.loc@gmail.com" className="hover:text-gray-400">
-            Email
-          </a>
-          <a href="tel:3476201943" className="hover:text-gray-400">
-            347-620-1943
           </a>
           <a
             href="https://linkedin.com/in/aiden-loc"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-gray-400"
+            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
           >
+            <LinkedInIcon />
             LinkedIn
+          </a>
+          <a
+            href="mailto:aiden.s.loc@gmail.com"
+            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
+          >
+            <MailIcon />
+            Contact
           </a>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl">
         <SectionHeading number="01" title="Education" />
         <Entry
           org="University at Buffalo"
