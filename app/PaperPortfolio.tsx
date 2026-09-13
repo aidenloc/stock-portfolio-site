@@ -15,6 +15,7 @@ import {
 import StockChart from './StockChart'
 import DailyBriefing from './DailyBriefing'
 import EarningsCalendar from './EarningsCalendar'
+import Card from './Card'
 
 const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
 type Period = (typeof PERIODS)[number]
@@ -107,14 +108,6 @@ function GainBadge({ value, size = 'sm', children }: { value: number; size?: 'sm
     >
       {children}
     </span>
-  )
-}
-
-function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={`bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)] ${className}`}>
-      {children}
-    </div>
   )
 }
 

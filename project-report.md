@@ -39,8 +39,9 @@ Build a personal website with two main sections:
 ## 4. Features Built So Far
 
 ### 4.1 Public homepage (`app/page.tsx`)
-- Plain sync component — no server-side data fetching happens here anymore (see 4.2). Renders `PaperPortfolio` (Section 4.9), which does its own client-side fetching.
-- Has a small, deliberately understated "Admin" text link at the bottom linking to `/admin/login` (not a prominent button — this is for the site owner, not visitors).
+- Plain sync component — no server-side data fetching happens here anymore (see 4.2). Renders `Header`, `PaperPortfolio` (Section 4.9, does its own client-side fetching), and `Footer`.
+- One of three tabs now (Portfolio/Aiden/Projects — Section 4.13); stays at the root `/` since it's the original core app, by explicit user decision when the other two tabs were added.
+- Has a small, deliberately understated "Admin" text link in the footer linking to `/admin/login` (not a prominent button — this is for the site owner, not visitors).
 
 ### 4.2 Removed: the original live watchlist ("My Portfolio" / `app/PriceList.tsx`)
 - The original design (live-quote watchlist with 15s auto-refresh while the market is open, `isMarketOpen()` NYSE-hours check, green/red gain coloring) has been **removed from the homepage and deleted** (`app/PriceList.tsx` no longer exists) — the paper portfolio tracker (Section 4.9) is now the homepage's only holdings display, per this phase's redesign.
@@ -136,9 +137,18 @@ Build a personal website with two main sections:
 - **Scope note:** "industry presentations/investor events" (asked for alongside earnings) were not built — no free API for that was found (see Section 9.3).
 
 ### 4.12 Header and footer
-- **`app/Header.tsx`** / **`app/Footer.tsx`** — minimal top/bottom bars, composed into `app/page.tsx` around `PaperPortfolio` (homepage only, matching the existing Finary-redesign scoping — `/admin` keeps its own bespoke header). Style takes inspiration from welcra.com's minimal personal-site header/footer (logo-left header with no background/border distinction; centered, sparse footer) — adapted rather than copied one-to-one, since that reference is a personal bio site with page-jump nav links ("Research," "Experience," "Projects") this app has no equivalent of; inventing fake nav destinations to match the reference more literally would have been misleading UI.
-- **Header:** just a "Portfolio" wordmark linking to `/`. No nav links were added, since there's currently nowhere else to link to.
-- **Footer:** centered `© {year} Portfolio · Admin`, with a subtle top hairline (`border-[var(--color-text)]/10`, consistent with the hairline convention already used elsewhere, e.g. the holdings list). **The "Admin" link itself is unchanged from before** — same understated small-gray-text treatment, just relocated from a bare `<div>` at the bottom of `page.tsx` into this footer component. Deliberately did *not* promote it to a more prominent nav item in the new header, since the original design intent (Section 4.1) was for it to stay low-visibility for casual visitors, not become a highlighted primary nav destination.
+- **`app/Header.tsx`** / **`app/Footer.tsx`** — minimal top/bottom bars, composed into each public page (`/`, `/aiden`, `/projects` — `/admin` keeps its own bespoke header). Style takes inspiration from welcra.com's minimal personal-site header/footer (logo-left header with no background/border distinction; centered, sparse footer).
+- **Footer:** centered `© {year} Aiden Loc · Admin` (name updated by request; was a generic "Portfolio" placeholder), with a subtle top hairline (`border-[var(--color-text)]/10`, consistent with the hairline convention already used elsewhere, e.g. the holdings list). **The "Admin" link itself is unchanged from before** — same understated small-gray-text treatment, just relocated from a bare `<div>` at the bottom of `page.tsx` into this footer component, kept low-visibility rather than promoted into the nav (original intent, Section 4.1).
+- **Header became a real tab bar once the multi-page structure below was built** — see Section 4.13.
+
+### 4.13 Aiden / Projects tabs (multi-page navigation)
+- **Scope decision (user-confirmed):** the stock portfolio dashboard stays at `/` (the existing core app, unchanged); `/aiden` and `/projects` are new routes alongside it, not a replacement of the homepage. This also finally builds the original plan's "Separate tab — displays personal projects" objective (Section 1) and Section 9.4's Projects tab, now as one of three tabs rather than a single "Projects" destination.
+- **`app/Header.tsx`** — now a client component (`usePathname()` from `next/navigation`) rendering three tabs — Portfolio (`/`), Aiden (`/aiden`), Projects (`/projects`) — with the active tab bold/white and inactive ones muted gray. The brand wordmark on the left ("Aiden Loc") always links to `/`, independent of which tab is active. No nav items were invented beyond these three real destinations — matching welcra.com's *pattern* (logo left, links right, minimal chrome) without copying its specific link labels, since this site's actual content is different.
+- **`app/Card.tsx`** — extracted from `PaperPortfolio.tsx` (which now imports it) since the same card surface treatment was needed on the two new pages too; three+ use sites was the threshold for pulling it into a shared component rather than continuing to inline-duplicate it.
+- **`app/aiden/page.tsx`** — resume/experience/contact page. **Explicitly placeholder content** (bracketed, italicized: `[Add a short bio / tagline here]`, etc.) — the user asked for the page structure now and to fill in real bio/experience/contact details afterward, rather than have anything fabricated on their behalf.
+- **`app/projects/page.tsx`** — "Research & Modeling" placeholder page for the future equity research/DCF modeling content mentioned in the original objectives (Section 1, Section 9.4). No content system built yet (no CMS/admin form for posting research) — just the page shell and a "nothing published yet" message.
+- Both new pages reuse the same outer container width as the homepage (`max-w-[1600px]`, so the header/footer chrome lines up identically when switching tabs) with a narrower `max-w-2xl` wrapper around the actual text content, since a resume-style page reads better at that width than stretched across a wide dashboard-style column.
+- Verified all three tabs via Playwright: clicking each nav link navigates correctly, the active tab highlights correctly, and the layout holds at both ~1400px and 380px (mobile) without wrapping.
 
 ---
 
@@ -255,7 +265,7 @@ Research summary only — no Finary assets, code, or exact branding to be copied
 **Built (earnings only) — see Section 4.11.** Confirmed directly that Finnhub's `/calendar/earnings` endpoint works on the free tier. "Industry presentations/investor events" (also requested alongside this) were **not** built — no free data source for that was found; Finnhub's free-tier calendar endpoints cover earnings, IPOs, and economic events, not company-specific investor conferences/presentations. Revisit if a source turns up.
 
 ### 9.4 Projects tab
-Not started. Originally scoped as a separate route/tab displaying research papers and modeling work — titles, short descriptions, and links or embedded PDFs, likely stored directly in the GitHub repo or Supabase storage rather than a separate hosting service.
+**Page shell built — see Section 4.13** (`/projects`, part of the new Aiden/Projects/Portfolio tab bar). Still not started: any actual content or a way to publish it — titles, short descriptions, links or embedded PDFs for research papers/DCF models, likely stored directly in the GitHub repo or Supabase storage rather than a separate hosting service, plus (if it should be admin-editable rather than hand-edited in the repo) an admin form similar to the paper portfolio's.
 
 ### 9.5 Broader Finary-inspired redesign
 **Built for the public homepage — see Section 4.9** (card-based layout, hero number, pill badges for gains/losses, row-list holdings). By explicit request, scoped to the homepage only — `/admin` was left with its plain functional look, and could get the same treatment later if wanted.
@@ -288,10 +298,13 @@ app/
     PaperPortfolioForm.tsx
     LogoutButton.tsx
     ThemeEditor.tsx
-  page.tsx
+  page.tsx                (Portfolio tab — root /)
+  aiden/page.tsx          (Aiden tab — resume/experience/contact, placeholder content)
+  projects/page.tsx       (Projects tab — research/DCF modeling, placeholder content)
   layout.tsx
-  Header.tsx
+  Header.tsx              (3-tab nav bar, client component — usePathname() for active-tab highlight)
   Footer.tsx
+  Card.tsx                (shared card surface, extracted from PaperPortfolio.tsx once aiden/projects needed it too)
   StockChart.tsx          (still used — now opened from PaperPortfolio's holdings table, not the removed PriceList)
   PaperPortfolio.tsx
   DailyBriefing.tsx
