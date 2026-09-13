@@ -13,6 +13,7 @@ import {
   Legend,
 } from 'recharts'
 import StockChart from './StockChart'
+import DailyBriefing from './DailyBriefing'
 
 const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
 type Period = (typeof PERIODS)[number]
@@ -195,120 +196,126 @@ export default function PaperPortfolio() {
       </div>
       <p className="text-xs text-gray-500 mb-8">Simulated portfolio, tracked for performance only — not real money.</p>
 
-      <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <div className="inline-flex bg-[var(--color-bg)] rounded-full p-1 gap-1">
-            {PERIODS.map((p) => (
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+        <div>
+          <Card className="mb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="inline-flex bg-[var(--color-bg)] rounded-full p-1 gap-1">
+                {PERIODS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                      period === p ? 'bg-[var(--color-primary)] text-white' : 'text-gray-400 hover:text-[var(--color-text)]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
               <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  period === p ? 'bg-[var(--color-primary)] text-white' : 'text-gray-400 hover:text-[var(--color-text)]'
+                onClick={() => setShowBenchmark((v) => !v)}
+                className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors ${
+                  showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
                 }`}
               >
-                {p}
+                S&amp;P 500
               </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowBenchmark((v) => !v)}
-            className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors ${
-              showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
-            }`}
-          >
-            S&amp;P 500
-          </button>
-        </div>
-
-        <div className="h-72">
-          {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={data.series}>
-                <defs>
-                  <linearGradient id="portfolioGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.3 }} />
-                    <stop offset="95%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="#333" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
-                <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-                <Tooltip
-                  labelFormatter={(t) => formatLabel(Number(t), period)}
-                  formatter={(value: any, name: any, entry: any) => {
-                    const point = entry?.payload as SeriesPoint | undefined
-                    const pct = `${Number(value).toFixed(2)}%`
-                    if (name === 'Portfolio') {
-                      const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
-                      return [`${pct} (${dollar})`, name]
-                    }
-                    const spyPrice = point?.spyPrice
-                    return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
-                  }}
-                  contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
-                />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="portfolioReturnPct"
-                  name="Portfolio"
-                  stroke="var(--color-primary)"
-                  strokeWidth={2}
-                  fill="url(#portfolioGlow)"
-                  dot={false}
-                />
-                {showBenchmark && (
-                  <Line
-                    type="monotone"
-                    dataKey="spyReturnPct"
-                    name="S&P 500 (SPY)"
-                    stroke="#888"
-                    dot={false}
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                  />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
-        </Card>
-        <Card>
-          <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
-        </Card>
-      </div>
-
-      <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
-        <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
-        <div>
-          {data.holdings.map((h) => (
-            <div
-              key={h.id}
-              onClick={() => setSelectedTicker(h.ticker)}
-              className="flex items-center justify-between px-4 py-3 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
-            >
-              <div>
-                <p className="font-semibold">{h.ticker}</p>
-                <p className="text-xs text-gray-500">{h.shares} shares</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium tabular-nums">${h.currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                <GainBadge value={h.gainDollar}>
-                  {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
-                  {h.gainPct.toFixed(2)}%)
-                </GainBadge>
-              </div>
             </div>
-          ))}
+
+            <div className="h-72">
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={data.series}>
+                    <defs>
+                      <linearGradient id="portfolioGlow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.3 }} />
+                        <stop offset="95%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#333" vertical={false} />
+                    <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
+                    <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                    <Tooltip
+                      labelFormatter={(t) => formatLabel(Number(t), period)}
+                      formatter={(value: any, name: any, entry: any) => {
+                        const point = entry?.payload as SeriesPoint | undefined
+                        const pct = `${Number(value).toFixed(2)}%`
+                        if (name === 'Portfolio') {
+                          const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
+                          return [`${pct} (${dollar})`, name]
+                        }
+                        const spyPrice = point?.spyPrice
+                        return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
+                      }}
+                      contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+                    />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="portfolioReturnPct"
+                      name="Portfolio"
+                      stroke="var(--color-primary)"
+                      strokeWidth={2}
+                      fill="url(#portfolioGlow)"
+                      dot={false}
+                    />
+                    {showBenchmark && (
+                      <Line
+                        type="monotone"
+                        dataKey="spyReturnPct"
+                        name="S&P 500 (SPY)"
+                        stroke="#888"
+                        dot={false}
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                      />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+            <Card>
+              <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
+            </Card>
+            <Card>
+              <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
+            </Card>
+          </div>
+
+          <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
+            <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
+            <div>
+              {data.holdings.map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => setSelectedTicker(h.ticker)}
+                  className="flex items-center justify-between px-4 py-3 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
+                >
+                  <div>
+                    <p className="font-semibold">{h.ticker}</p>
+                    <p className="text-xs text-gray-500">{h.shares} shares</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium tabular-nums">${h.currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                    <GainBadge value={h.gainDollar}>
+                      {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
+                      {h.gainPct.toFixed(2)}%)
+                    </GainBadge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        <DailyBriefing />
+      </div>
 
       {selectedTicker && <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />}
     </section>
