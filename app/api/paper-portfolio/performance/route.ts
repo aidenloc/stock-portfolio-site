@@ -96,6 +96,7 @@ export async function GET(request: Request) {
   const series = activeSeries.map((pt) => ({
     time: pt.time,
     portfolioValue: pt.value,
+    spyPrice: pt.spyPrice ?? null,
     portfolioReturnPct: baseValue ? ((pt.value - baseValue) / baseValue) * 100 : 0,
     spyReturnPct: baseSpy && pt.spyPrice ? ((pt.spyPrice - baseSpy) / baseSpy) * 100 : null,
   }))

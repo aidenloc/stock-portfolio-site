@@ -33,7 +33,12 @@ export default async function AdminDashboard() {
     <main className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <LogoutButton />
+        <div className="flex items-center gap-4">
+          <a href="/" className="text-xs text-gray-600 hover:text-gray-400">
+            ← Back to site
+          </a>
+          <LogoutButton />
+        </div>
       </div>
       <AdminPortfolioForm portfolio={portfolio ?? []} />
       <PaperPortfolioForm holdings={paperPortfolio ?? []} />

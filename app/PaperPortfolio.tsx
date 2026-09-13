@@ -31,6 +31,7 @@ type Holding = {
 type SeriesPoint = {
   time: number
   portfolioValue: number
+  spyPrice: number | null
   portfolioReturnPct: number
   spyReturnPct: number | null
 }
@@ -126,7 +127,16 @@ export default function PaperPortfolio() {
               <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
               <Tooltip
                 labelFormatter={(t) => formatLabel(Number(t), period)}
-                formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
+                formatter={(value: any, name: any, entry: any) => {
+                  const point = entry?.payload as SeriesPoint | undefined
+                  const pct = `${Number(value).toFixed(2)}%`
+                  if (name === 'Portfolio') {
+                    const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
+                    return [`${pct} (${dollar})`, name]
+                  }
+                  const spyPrice = point?.spyPrice
+                  return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
+                }}
                 contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
               />
               <Legend />
