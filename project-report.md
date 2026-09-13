@@ -112,11 +112,19 @@ Build a personal website with two main sections:
 - **Setup:** both `supabase/paper_portfolio.sql` and `supabase/paper_portfolio_add_sector.sql` have been run in the Supabase SQL editor — the table, its RLS policy, and the `sector` column all exist in production.
 - **Chart tooltip shows the underlying $ value alongside the % return** — hovering a point shows e.g. "Portfolio: 10.25% ($3,496)" and "S&P 500 (SPY): 0.02% ($772.67)". Chose the tooltip over a second Y-axis/extra visible lines because portfolio value (thousands of dollars) and SPY's price (hundreds of dollars) are on incompatible scales from the % lines — a second axis would visually clutter the chart without adding clarity. The performance API now returns raw `spyPrice` per point (previously computed internally but discarded) alongside the already-present `portfolioValue`.
 - **Admin dashboard has a "← Back to site" link** next to Log Out (mirroring the one already on `/admin/login`), so the owner isn't stuck without a nav path back to the public homepage.
-- **Finary-inspired visual redesign (homepage only, by request — Section 2.1):** a `Card` wrapper (`bg-[var(--color-card)]`, Section 4.8) now holds the chart, the two exposure bars, and the holdings list as distinct surfaces against the page background, on a `max-w-3xl` centered column instead of full-bleed. The headline shows the total value on its own line, then a row below with the period's plain-colored `$` delta and a **pill badge** (`GainBadge`, green/red at ~20% opacity — not themed, same convention as other gain/loss indicators) for the `%` — matching the two-part layout in Finary's own dashboard (screenshots the user provided directly), rather than one combined figure. Period buttons became a pill-shaped segmented control. The holdings table became a row-list (ticker + share count on the left, value + gain/loss pill on the right) rather than an HTML `<table>`, closer to how Finary-style dashboards present a holdings list.
+- **Finary-inspired visual redesign (homepage only, by request — Section 2.1):** a `Card` wrapper (`bg-[var(--color-card)]`, Section 4.8) now holds the chart, the two exposure bars, and the holdings list as distinct surfaces against the page background, in a centered column (originally `max-w-3xl`; widened to `max-w-5xl` with a two-column grid once the Daily Briefing panel was added — Section 4.10). The headline shows the total value on its own line, then a row below with the period's plain-colored `$` delta and a **pill badge** (`GainBadge`, green/red at ~20% opacity — not themed, same convention as other gain/loss indicators) for the `%` — matching the two-part layout in Finary's own dashboard (screenshots the user provided directly), rather than one combined figure. Period buttons became a pill-shaped segmented control. The holdings table became a row-list (ticker + share count on the left, value + gain/loss pill on the right) rather than an HTML `<table>`, closer to how Finary-style dashboards present a holdings list.
 - **Color palette matched to Finary's actual dashboard** (from screenshots the user provided, not the marketing site) — done by updating the *live* `site_settings` values via the admin API, not just code defaults: `background_color` → near-black `#0a0a0a` (was a mid-gray `#343434`), `primary_color` → warm amber/gold `#e5a94a` (was purple `#a300f0`). `text_color` stayed white. These are still fully editable later from `/admin`'s ThemeEditor — nothing is hardcoded; the update just set the *current* values to this palette.
 - **Chart now uses a Recharts `ComposedChart`+`Area`** (was `LineChart`+`Line`) so the portfolio series gets a soft gradient glow fading from `var(--color-primary)` at ~30% opacity to transparent under the line, matching the glow visible under the line in Finary's own charts — a single `Area` element carries both the stroke and the fill (avoids a duplicate Tooltip row that a separate overlapping `Line` on the same dataKey would otherwise cause). `CartesianGrid` dropped `vertical` gridlines (horizontal-only now, in both this chart and `StockChart.tsx`'s per-ticker modal), matching the reference screenshots — no chart in either component has vertical gridlines anymore.
 - Colors/spacing/fonts still flow entirely through the existing admin-customizable theme system — nothing here is a hardcoded Finary palette; see the `card_background_color` addition in Section 4.8. The line/gradient color is `var(--color-primary)`, so changing that picker in `/admin` reshades the chart too.
 - Verified end-to-end in a real Chromium browser (Playwright), at both desktop and mobile widths: headline % changes across periods, SPY line/legend toggle correctly, exposure bars render with correct percentages/colors, clicking a holdings-row opens that ticker's chart modal, the "My Portfolio" heading is confirmed gone from the rendered page, and the new "Card background" picker renders correctly in `/admin`.
+
+### 4.10 Daily briefing
+- **`app/DailyBriefing.tsx`** — client component rendered in a right-hand column next to `PaperPortfolio` on the homepage (`app/page.tsx`'s `grid-cols-[1fr_320px]`, stacking below the main column on mobile; `lg:sticky lg:top-6` so it stays in view while scrolling a long holdings list). Fetches `/api/daily-briefing` on mount; renders nothing if there's no cached briefing yet or it's empty, so it fails safe like the other homepage sections. Each ticker section lists its headlines as links (opens the source article in a new tab) with the source name underneath.
+- **Not generated on page load or by any user-facing request.** A `daily_briefing` Supabase table (single row, `id=1` — schema in Section 5) holds whatever was last generated; `app/api/daily-briefing/route.ts` (public GET) just reads that row.
+- **`app/api/cron/daily-briefing/route.ts`** — the actual generator. Gated behind `request.headers.get('authorization') === 'Bearer ' + process.env.CRON_SECRET` (a new env var, Section 6) rather than the existing admin-session check, since this route isn't called by a logged-in admin — it's called by Vercel's Cron infrastructure. On each run it: reads the *current* unique tickers from `paper_portfolio`, calls Finnhub's free `/company-news` endpoint per ticker (confirmed working on the free tier — returns headline, source, a short `summary`, and a URL, so no separate AI summarization call is needed for a "headline roundup"), takes the 4 most recent deduplicated headlines per ticker from the last 3 days, and upserts the whole thing into `daily_briefing`.
+- **Why a real cron job and not generate-on-first-visit:** the user's requirement was that adding a new ticker to the paper portfolio must not affect the briefing until the *next calendar day* — guaranteed, not "usually true." A lazily-generated-on-first-visit design would violate this exactly when a ticker is added before anyone visits the site that day (very plausible for a personal site the owner checks right after adding a position). A scheduled job that snapshots tickers at a fixed time each day, independent of visits, is what makes the guarantee real. Configured in `vercel.json` (`crons: [{ path: "/api/cron/daily-briefing", schedule: "0 12 * * *" }]`) — Vercel's Hobby plan allows cron jobs at up to once-daily frequency, which this fits.
+- **Known limitation (Finnhub free tier, not a bug in this code):** `/company-news` doesn't always return articles strictly about the queried ticker — for less-covered names it can include broader sector/market news loosely associated with that symbol (observed directly: a query for a semiconductor holding returned an unrelated IMF global-growth-forecast story). No paid alternative was pursued for this since the feature was scoped to "headline roundup," not curated relevance.
+- **Setup:** `supabase/daily_briefing.sql` (table + RLS policy) has been run in the Supabase SQL editor. `CRON_SECRET` has been generated and added to Vercel's production environment via `vercel env add`; it's also in `.env.local` for local testing (the cron route was exercised manually with `curl -H "Authorization: Bearer $CRON_SECRET" ...` before Vercel's own scheduler ever ran it).
 
 ---
 
@@ -158,6 +166,16 @@ RLS: public SELECT policy. No public UPDATE policy — writes via `supabaseAdmin
 
 RLS: public SELECT policy. No public INSERT/UPDATE/DELETE policy — writes via `supabaseAdmin` in `app/api/paper-portfolio/route.ts` (and the performance route's one-time sector backfill) only. Schema/policy defined in `supabase/paper_portfolio.sql`; the `sector` column added later via `supabase/paper_portfolio_add_sector.sql`. Both have been run in the Supabase SQL editor and are live in production.
 
+### `daily_briefing`
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint | primary key, always `1` (`check (id = 1)`) — single-row cache, not a growing history table |
+| briefing_date | date | the date this briefing was generated |
+| content | jsonb | array of `{ ticker, headlines: [{ headline, summary, source, url, datetime }] }` |
+| updated_at | timestamptz | default `now()` |
+
+RLS: public SELECT policy. No public INSERT/UPDATE/DELETE policy — writes only via `supabaseAdmin` in the cron route (`app/api/cron/daily-briefing/route.ts`), which itself is gated by `CRON_SECRET` rather than an admin session (Section 4.10). Schema/policy defined in `supabase/daily_briefing.sql`, run in the Supabase SQL editor.
+
 ---
 
 ## 6. Environment Variables
@@ -172,6 +190,7 @@ All of these must exist in **both** `.env.local` (local dev) and Vercel → Sett
 | `ADMIN_PASSWORD` | Single shared password for `/admin` login | No (Secret type in Vercel) |
 | `SESSION_SECRET` | Compared directly against submitted session cookie value | No (Secret type in Vercel) |
 | `FINNHUB_API_KEY` | Live quote API access | No (Secret type in Vercel) |
+| `CRON_SECRET` | Authorizes calls to `/api/cron/daily-briefing` (checked against the request's `Authorization: Bearer` header) | No (Secret type in Vercel; added via `vercel env add`, not the dashboard) |
 
 Actual values live only in `.env.local` on the local machine and in the Vercel dashboard — not reproduced in this document.
 
@@ -213,7 +232,7 @@ Research summary only — no Finary assets, code, or exact branding to be copied
 **Built — see Section 4.9**, including back-dated entries (admin picks any past date; entry price is looked up from Yahoo history rather than typed in manually, to keep the data trustworthy). Remaining follow-ups, if wanted later: a dedicated `/paper-portfolio` route if the homepage section grows too large; additional benchmarks beyond SPY; editing an existing position's shares/date instead of remove-and-re-add.
 
 ### 9.2 Daily briefing section
-Not started. Could be a manually-entered text field (simplest, admin types a short update each morning) or automated (pull top headlines for portfolio tickers from a free news API). Original plan favored starting manual and automating later.
+**Built — see Section 4.10.** Went straight to the automated path (headline roundup from Finnhub, not manual entry), generated once a day by a real Vercel Cron job rather than on-demand, per explicit requirements: (1) a ticker added to the paper portfolio shouldn't affect the briefing until the *next* day's run, and (2) "summarize" meant a headline roundup, not an AI-written prose summary (avoids adding a new paid LLM dependency).
 
 ### 9.3 Earnings call date tracker
 Not started. Finnhub has an earnings-calendar endpoint that may work on the free tier (unconfirmed — Finnhub's candle/historical data being paid-only doesn't necessarily mean earnings calendar is also restricted; should be verified directly before building).
@@ -234,6 +253,9 @@ app/
     admin/
       login/route.ts
       logout/route.ts
+    cron/
+      daily-briefing/route.ts  (Vercel Cron target, gated by CRON_SECRET — not an admin-session route)
+    daily-briefing/route.ts    (public GET, just reads the cached row)
     history/route.ts
     paper-portfolio/
       route.ts
@@ -252,6 +274,7 @@ app/
   layout.tsx
   StockChart.tsx          (still used — now opened from PaperPortfolio's holdings table, not the removed PriceList)
   PaperPortfolio.tsx
+  DailyBriefing.tsx
   globals.css
 lib/
   supabaseClient.ts     (public anon-key client)
@@ -263,7 +286,9 @@ supabase/
   paper_portfolio.sql             (manual migration — table + RLS policy for paper_portfolio; run in Supabase SQL editor)
   paper_portfolio_add_sector.sql  (manual migration — adds the sector column; run in Supabase SQL editor)
   site_settings_add_card_color.sql (manual migration — adds card_background_color; NOT yet run, see Section 5)
+  daily_briefing.sql               (manual migration — table + RLS policy for daily_briefing; run in Supabase SQL editor)
 middleware.ts             (protects /admin/* routes)
+vercel.json                (Vercel Cron config — daily-briefing generation, once a day)
 ```
 
 ---
