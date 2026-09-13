@@ -56,7 +56,7 @@ export default function ThemeEditor() {
   }
 
   return (
-    <div className="border-t pt-6 mt-8">
+    <div>
       <h2 className="text-xl font-bold mb-4">Site Appearance</h2>
 
       <div className="grid grid-cols-2 gap-4 max-w-md mb-4">
@@ -66,7 +66,7 @@ export default function ThemeEditor() {
             type="color"
             value={`#${settings.primary_color.replace('#', '')}`}
             onChange={(e) => updateField('primary_color', e.target.value.replace('#', ''))}
-            className="w-full h-10 rounded cursor-pointer"
+            className="w-full h-10 rounded-[var(--border-radius)] cursor-pointer"
           />
         </div>
         <div>
@@ -75,7 +75,7 @@ export default function ThemeEditor() {
             type="color"
             value={`#${settings.background_color.replace('#', '')}`}
             onChange={(e) => updateField('background_color', e.target.value.replace('#', ''))}
-            className="w-full h-10 rounded cursor-pointer"
+            className="w-full h-10 rounded-[var(--border-radius)] cursor-pointer"
           />
         </div>
         <div>
@@ -84,7 +84,7 @@ export default function ThemeEditor() {
             type="color"
             value={`#${settings.text_color.replace('#', '')}`}
             onChange={(e) => updateField('text_color', e.target.value.replace('#', ''))}
-            className="w-full h-10 rounded cursor-pointer"
+            className="w-full h-10 rounded-[var(--border-radius)] cursor-pointer"
           />
         </div>
         <div>
@@ -93,7 +93,7 @@ export default function ThemeEditor() {
             type="color"
             value={`#${(settings.card_background_color || '2a2a2a').replace('#', '')}`}
             onChange={(e) => updateField('card_background_color', e.target.value.replace('#', ''))}
-            className="w-full h-10 rounded cursor-pointer"
+            className="w-full h-10 rounded-[var(--border-radius)] cursor-pointer"
           />
           <p className="text-xs text-gray-500 mt-1">Background for dashboard cards (chart, exposure, holdings). Defaults to a subtle shade of the page background until set.</p>
         </div>
@@ -116,7 +116,7 @@ export default function ThemeEditor() {
           <select
             value={settings.border_radius}
             onChange={(e) => updateField('border_radius', e.target.value)}
-            className="w-full h-10 rounded px-2 text-black bg-white"
+            className="w-full h-10 rounded-[var(--border-radius)] px-2 bg-[var(--color-bg)] border border-[var(--color-text)]/15 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/60"
           >
             <option value="0px">Sharp (0px)</option>
             <option value="4px">Slight (4px)</option>
@@ -131,7 +131,7 @@ export default function ThemeEditor() {
         <select
           value={settings.font_family}
           onChange={(e) => updateField('font_family', e.target.value)}
-          className="w-full h-10 rounded px-2 text-black bg-white"
+          className="w-full h-10 rounded-[var(--border-radius)] px-2 bg-[var(--color-bg)] border border-[var(--color-text)]/15 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/60"
         >
           {FONT_OPTIONS.map((f) => (
             <option key={f.value} value={f.value}>
@@ -146,7 +146,7 @@ export default function ThemeEditor() {
         <select
           value={settings.spacing_scale}
           onChange={(e) => updateField('spacing_scale', e.target.value)}
-          className="w-full h-10 rounded px-2 text-black bg-white"
+          className="w-full h-10 rounded-[var(--border-radius)] px-2 bg-[var(--color-bg)] border border-[var(--color-text)]/15 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/60"
         >
           <option value="compact">Compact</option>
           <option value="normal">Normal</option>

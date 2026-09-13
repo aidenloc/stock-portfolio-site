@@ -14,44 +14,27 @@ async function checkAuth() {
   return isValidSessionToken(token)
 }
 
-export async function GET() {
-  const { data, error } = await supabase
-    .from('paper_portfolio')
-    .select('*')
-    .order('created_at', { ascending: true })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ holdings: data ?? [] })
-}
-
-export async function POST(request: Request) {
-  const isAuthed = await checkAuth()
-  if (!isAuthed) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  const { ticker, shares, entryDate } = await request.json()
-
+// Shared by POST (new holding) and PUT (edit) — validates inputs and resolves
+// the entry price for a ticker/date pair (today's live quote, or that day's
+// Yahoo closing price for a back-dated entry).
+async function resolveEntry(ticker: unknown, shares: unknown, entryDate: unknown) {
   if (!ticker || typeof ticker !== 'string') {
-    return NextResponse.json({ error: 'Invalid ticker' }, { status: 400 })
+    return { error: 'Invalid ticker' } as const
   }
 
   const sharesNum = Number(shares)
   if (!sharesNum || sharesNum <= 0) {
-    return NextResponse.json({ error: 'Invalid share count' }, { status: 400 })
+    return { error: 'Invalid share count' } as const
   }
 
   const today = new Date().toISOString().slice(0, 10)
   const resolvedEntryDate = entryDate && typeof entryDate === 'string' ? entryDate : today
 
   if (!DATE_RE.test(resolvedEntryDate)) {
-    return NextResponse.json({ error: 'Invalid entry date' }, { status: 400 })
+    return { error: 'Invalid entry date' } as const
   }
   if (resolvedEntryDate > today) {
-    return NextResponse.json({ error: 'Entry date cannot be in the future' }, { status: 400 })
+    return { error: 'Entry date cannot be in the future' } as const
   }
 
   const upperTicker = ticker.toUpperCase().trim()
@@ -74,18 +57,73 @@ export async function POST(request: Request) {
   }
 
   if (!entryPrice) {
-    return NextResponse.json({ error: 'Could not find a price for this ticker on that date' }, { status: 400 })
+    return { error: 'Could not find a price for this ticker on that date' } as const
   }
 
   const sector = await fetchSector(upperTicker)
 
-  const { error } = await supabaseAdmin.from('paper_portfolio').insert({
+  return {
     ticker: upperTicker,
     shares: sharesNum,
     entry_price: entryPrice,
     entry_date: resolvedEntryDate,
     sector,
-  })
+  } as const
+}
+
+export async function GET() {
+  const { data, error } = await supabase
+    .from('paper_portfolio')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ holdings: data ?? [] })
+}
+
+export async function POST(request: Request) {
+  const isAuthed = await checkAuth()
+  if (!isAuthed) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  const { ticker, shares, entryDate } = await request.json()
+
+  const resolved = await resolveEntry(ticker, shares, entryDate)
+  if ('error' in resolved) {
+    return NextResponse.json({ error: resolved.error }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('paper_portfolio').insert(resolved)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+
+export async function PUT(request: Request) {
+  const isAuthed = await checkAuth()
+  if (!isAuthed) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  const { id, ticker, shares, entryDate } = await request.json()
+
+  if (!id) {
+    return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+  }
+
+  const resolved = await resolveEntry(ticker, shares, entryDate)
+  if ('error' in resolved) {
+    return NextResponse.json({ error: resolved.error }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('paper_portfolio').update(resolved).eq('id', id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
