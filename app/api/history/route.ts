@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server'
+import { fetchYahooHistory, type Period } from '@/lib/yahooHistory'
 
-const RANGE_CONFIG: Record<string, { range: string; interval: string }> = {
-  '1D': { range: '1d', interval: '5m' },
-  '5D': { range: '5d', interval: '15m' },
-  '1M': { range: '1mo', interval: '1d' },
-  '6M': { range: '6mo', interval: '1d' },
-  YTD: { range: 'ytd', interval: '1d' },
-  '1Y': { range: '1y', interval: '1d' },
-}
+const VALID_PERIODS = ['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y']
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -18,37 +12,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Ticker is required' }, { status: 400 })
   }
 
-  const config = RANGE_CONFIG[period]
-  if (!config) {
+  if (!VALID_PERIODS.includes(period)) {
     return NextResponse.json({ error: 'Invalid period' }, { status: 400 })
   }
 
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${config.range}&interval=${config.interval}`
-
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-    },
-  })
-
-  if (!res.ok) {
-    return NextResponse.json({ error: 'Failed to fetch history' }, { status: 502 })
+  try {
+    const points = await fetchYahooHistory(ticker, period as Period)
+    return NextResponse.json({ points })
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch history for this ticker' }, { status: 502 })
   }
-
-  const data = await res.json()
-  const result = data?.chart?.result?.[0]
-
-  if (!result) {
-    return NextResponse.json({ error: 'No data found for this ticker' }, { status: 404 })
-  }
-
-  const timestamps: number[] = result.timestamp || []
-  const closes: (number | null)[] = result.indicators?.quote?.[0]?.close || []
-
-  const points = timestamps
-    .map((t, i) => ({ time: t, price: closes[i] }))
-    .filter((p) => p.price !== null && p.price !== undefined)
-
-  return NextResponse.json({ points })
 }

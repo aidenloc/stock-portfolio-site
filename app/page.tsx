@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import PriceList from './PriceList'
+import PaperPortfolio from './PaperPortfolio'
 
 export default async function Home() {
   const { data: portfolio, error } = await supabase
@@ -13,6 +14,7 @@ export default async function Home() {
 
   return (
     <main className="p-[calc(var(--spacing-unit)*2rem)]">
+      <PaperPortfolio />
       <h1 className="text-2xl font-bold mb-[calc(var(--spacing-unit)*1rem)]">My Portfolio</h1>
       <PriceList portfolio={portfolio ?? []} />
       <div className="mt-12 text-center">
