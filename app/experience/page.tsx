@@ -173,29 +173,7 @@ export default function ExperiencePage() {
           ]}
         />
 
-        <SectionHeading number="02" title="Certifications" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-          <CertificationCard
-            icon={<IBMMark />}
-            name="Getting Started with Generative AI"
-            issuer="IBM"
-            url="https://www.credly.com/badges/d2906cd3-1845-49f2-9188-52673d1da0cd/public_url"
-          />
-          <CertificationCard
-            icon={<GoogleMark />}
-            name="AI Essentials"
-            issuer="Google"
-            url="https://www.credly.com/badges/eef651b8-a4fc-4078-9d7e-6f96bbd661e9/public_url"
-          />
-          <CertificationCard
-            icon={<GoogleMark />}
-            name="Prompting Essentials"
-            issuer="Google"
-            url="https://coursera.org/share/604a85174e38112cad0980ad4f2ba6c5"
-          />
-        </div>
-
-        <SectionHeading number="03" title="Experience" />
+        <SectionHeading number="02" title="Experience" />
         <Entry
           org="Osmanthus LLC"
           location="Brooklyn, NY"
@@ -218,6 +196,28 @@ export default function ExperiencePage() {
             "Authored detailed investment reports outlining the team's financial thesis, valuation models, and long-term strategic outlook",
           ]}
         />
+
+        <SectionHeading number="03" title="Certifications" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <CertificationCard
+            icon={<IBMMark />}
+            name="Getting Started with Generative AI"
+            issuer="IBM"
+            url="https://www.credly.com/badges/d2906cd3-1845-49f2-9188-52673d1da0cd/public_url"
+          />
+          <CertificationCard
+            icon={<GoogleMark />}
+            name="AI Essentials"
+            issuer="Google"
+            url="https://www.credly.com/badges/eef651b8-a4fc-4078-9d7e-6f96bbd661e9/public_url"
+          />
+          <CertificationCard
+            icon={<GoogleMark />}
+            name="Prompting Essentials"
+            issuer="Google"
+            url="https://coursera.org/share/604a85174e38112cad0980ad4f2ba6c5"
+          />
+        </div>
 
         <SectionHeading number="04" title="Extracurricular Experience" />
         <Entry
