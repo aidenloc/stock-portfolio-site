@@ -135,6 +135,11 @@ Build a personal website with two main sections:
 - **Each row:** a date badge (weekday + day number), the company name, an honest market-timing label when Finnhub provides one (**"Before Market Open" / "After Market Close" / "During Market Hours"** — deliberately not a fabricated clock time; the free tier's `hour` field is only `bmo`/`amc`/`dmh`, not a precise time like the reference screenshot showed, and inventing one would be misleading), `Q{quarter} {year}` · EPS est. · Rev est. (revenue compacted to K/M/B), and a **"+ Add to calendar"** link that opens a prefilled Google Calendar event (all-day, title + EPS/Revenue estimates in the description) — no backend/ICS generation needed, just a `calendar.google.com/calendar/render` URL built client-side. Verified the generated links resolve to correctly-dated, correctly-titled events.
 - **Scope note:** "industry presentations/investor events" (asked for alongside earnings) were not built — no free API for that was found (see Section 9.3).
 
+### 4.12 Header and footer
+- **`app/Header.tsx`** / **`app/Footer.tsx`** — minimal top/bottom bars, composed into `app/page.tsx` around `PaperPortfolio` (homepage only, matching the existing Finary-redesign scoping — `/admin` keeps its own bespoke header). Style takes inspiration from welcra.com's minimal personal-site header/footer (logo-left header with no background/border distinction; centered, sparse footer) — adapted rather than copied one-to-one, since that reference is a personal bio site with page-jump nav links ("Research," "Experience," "Projects") this app has no equivalent of; inventing fake nav destinations to match the reference more literally would have been misleading UI.
+- **Header:** just a "Portfolio" wordmark linking to `/`. No nav links were added, since there's currently nowhere else to link to.
+- **Footer:** centered `© {year} Portfolio · Admin`, with a subtle top hairline (`border-[var(--color-text)]/10`, consistent with the hairline convention already used elsewhere, e.g. the holdings list). **The "Admin" link itself is unchanged from before** — same understated small-gray-text treatment, just relocated from a bare `<div>` at the bottom of `page.tsx` into this footer component. Deliberately did *not* promote it to a more prominent nav item in the new header, since the original design intent (Section 4.1) was for it to stay low-visibility for casual visitors, not become a highlighted primary nav destination.
+
 ---
 
 ## 5. Database Schema (Supabase)
@@ -285,6 +290,8 @@ app/
     ThemeEditor.tsx
   page.tsx
   layout.tsx
+  Header.tsx
+  Footer.tsx
   StockChart.tsx          (still used — now opened from PaperPortfolio's holdings table, not the removed PriceList)
   PaperPortfolio.tsx
   DailyBriefing.tsx
