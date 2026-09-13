@@ -39,6 +39,11 @@ export default function LoginPage() {
         Log In
       </button>
       {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
+      <div className="mt-6 text-center">
+        <a href="/" className="text-xs text-gray-600 hover:text-gray-400">
+          ← Back to site
+        </a>
+      </div>
     </main>
   )
 }
