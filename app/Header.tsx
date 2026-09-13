@@ -13,7 +13,10 @@ export default function Header() {
   const pathname = usePathname()
 
   return (
-    <header className="flex items-center justify-between mb-[calc(var(--spacing-unit)*2rem)]">
+    <header
+      className="sticky top-0 z-40 -mt-[calc(var(--spacing-unit)*2rem)] pt-[calc(var(--spacing-unit)*2rem)] pb-[calc(var(--spacing-unit)*1rem)] mb-[calc(var(--spacing-unit)*1rem)]
+                 flex items-center justify-between bg-[var(--color-bg)]/85 backdrop-blur-md"
+    >
       <Link href="/" className="font-bold text-lg tracking-tight">
         Aiden Loc
       </Link>
