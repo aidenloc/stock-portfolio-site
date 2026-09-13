@@ -69,6 +69,61 @@ function MailIcon() {
   )
 }
 
+function ArrowIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
+  )
+}
+
+// Stylized (not literal) issuer marks -- monogram badges in the site's own
+// theme colors rather than a reproduction of either company's real logo.
+function GoogleMark() {
+  return (
+    <div className="w-9 h-9 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-serif text-base">
+      G
+    </div>
+  )
+}
+
+function IBMMark() {
+  return (
+    <div className="w-9 h-9 rounded-[var(--border-radius)] border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-bold text-[10px] tracking-tight">
+      IBM
+    </div>
+  )
+}
+
+function CertificationCard({
+  icon,
+  name,
+  issuer,
+  url,
+}: {
+  icon: React.ReactNode
+  name: string
+  issuer: string
+  url: string
+}) {
+  return (
+    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
+      <div className="mb-4">{icon}</div>
+      <h3 className="font-serif text-xl mb-1">{name}</h3>
+      <p className="text-xs uppercase tracking-widest text-gray-500 mb-5">{issuer}</p>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
+      >
+        View Certificate <ArrowIcon />
+      </a>
+    </div>
+  )
+}
+
 export default function ExperiencePage() {
   return (
     <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
@@ -113,13 +168,34 @@ export default function ExperiencePage() {
           role="Bachelor of Science in Business Administration"
           dates="Expected May 2030"
           bullets={[
-            'Certifications: Google Prompting Essentials, Google AI Essentials',
             'Awards: First Prize Winner, Chinese American Citizens Alliance Greater New York Essay Competition (2025)',
             'Relevant Courses/Exams: CLEP Analyzing and Interpreting Literature, CLEP Calculus, CLEP Financial Accounting',
           ]}
         />
 
-        <SectionHeading number="02" title="Experience" />
+        <SectionHeading number="02" title="Certifications" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <CertificationCard
+            icon={<IBMMark />}
+            name="Getting Started with Generative AI"
+            issuer="IBM"
+            url="https://www.credly.com/badges/d2906cd3-1845-49f2-9188-52673d1da0cd/public_url"
+          />
+          <CertificationCard
+            icon={<GoogleMark />}
+            name="AI Essentials"
+            issuer="Google"
+            url="https://www.credly.com/badges/eef651b8-a4fc-4078-9d7e-6f96bbd661e9/public_url"
+          />
+          <CertificationCard
+            icon={<GoogleMark />}
+            name="Prompting Essentials"
+            issuer="Google"
+            url="https://coursera.org/share/604a85174e38112cad0980ad4f2ba6c5"
+          />
+        </div>
+
+        <SectionHeading number="03" title="Experience" />
         <Entry
           org="Osmanthus LLC"
           location="Brooklyn, NY"
@@ -143,7 +219,7 @@ export default function ExperiencePage() {
           ]}
         />
 
-        <SectionHeading number="03" title="Extracurricular Experience" />
+        <SectionHeading number="04" title="Extracurricular Experience" />
         <Entry
           org="CIEE International Studies Tokyo"
           location="Tokyo, Japan"
@@ -167,7 +243,7 @@ export default function ExperiencePage() {
           ]}
         />
 
-        <SectionHeading number="04" title="Technical Skills" />
+        <SectionHeading number="05" title="Technical Skills" />
         <div className="text-sm text-gray-400 space-y-2 mb-8">
           <p>
             <span className="text-[var(--color-text)] font-medium">Languages:</span> English
