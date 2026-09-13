@@ -88,7 +88,7 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <CartesianGrid stroke="#333" vertical={false} />
                 <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
                 <YAxis domain={['auto', 'auto']} stroke="#888" width={60} />
                 <Tooltip

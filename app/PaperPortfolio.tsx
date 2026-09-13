@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   ResponsiveContainer,
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -99,7 +100,7 @@ function GainBadge({ value, size = 'sm', children }: { value: number; size?: 'sm
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium ${sizeClasses} ${
-        up ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+        up ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
       }`}
     >
       {children}
@@ -170,6 +171,9 @@ export default function PaperPortfolio() {
   if (!data || !data.holdings || data.holdings.length === 0) return null
 
   const periodReturnPct = data.series.length ? data.series[data.series.length - 1].portfolioReturnPct : 0
+  const periodDollarChange =
+    data.series.length > 1 ? data.series[data.series.length - 1].portfolioValue - data.series[0].portfolioValue : 0
+  const periodUp = periodDollarChange >= 0
 
   const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
@@ -177,10 +181,13 @@ export default function PaperPortfolio() {
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
-      <div className="flex flex-wrap items-end gap-3 mb-1">
-        <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none">
-          ${data.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-        </h1>
+      <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">
+        ${data.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </h1>
+      <div className="flex flex-wrap items-center gap-2 mb-1">
+        <span className={`text-sm font-medium ${periodUp ? 'text-green-400' : 'text-red-400'}`}>
+          {periodUp ? '+' : '-'}${Math.abs(periodDollarChange).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+        </span>
         <GainBadge value={periodReturnPct} size="md">
           {periodReturnPct >= 0 ? '+' : ''}
           {periodReturnPct.toFixed(2)}% · {period}
@@ -218,8 +225,14 @@ export default function PaperPortfolio() {
             <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <ComposedChart data={data.series}>
+                <defs>
+                  <linearGradient id="portfolioGlow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.3 }} />
+                    <stop offset="95%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#333" vertical={false} />
                 <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
                 <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
                 <Tooltip
@@ -237,13 +250,14 @@ export default function PaperPortfolio() {
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
                 />
                 <Legend />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="portfolioReturnPct"
                   name="Portfolio"
                   stroke="var(--color-primary)"
-                  dot={false}
                   strokeWidth={2}
+                  fill="url(#portfolioGlow)"
+                  dot={false}
                 />
                 {showBenchmark && (
                   <Line
@@ -256,7 +270,7 @@ export default function PaperPortfolio() {
                     strokeDasharray="4 4"
                   />
                 )}
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
