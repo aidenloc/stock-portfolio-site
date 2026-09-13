@@ -4,7 +4,7 @@ import Footer from './Footer'
 
 export default function Home() {
   return (
-    <main className="max-w-5xl mx-auto p-[calc(var(--spacing-unit)*2rem)]">
+    <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
       <Header />
       <PaperPortfolio />
       <Footer />

@@ -66,7 +66,7 @@ export default function EarningsCalendar() {
   if (!events || events.length === 0) return null
 
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.25rem)]">
+    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-4">Upcoming Earnings</p>
       <div className="space-y-4">
         {events.map((e, i) => {

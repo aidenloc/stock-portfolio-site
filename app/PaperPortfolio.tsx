@@ -112,7 +112,7 @@ function GainBadge({ value, size = 'sm', children }: { value: number; size?: 'sm
 
 function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={`bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.25rem)] ${className}`}>
+    <div className={`bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)] ${className}`}>
       {children}
     </div>
   )
@@ -197,7 +197,7 @@ export default function PaperPortfolio() {
       </div>
       <p className="text-xs text-gray-500 mb-8">Simulated portfolio, tracked for performance only — not real money.</p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
         <div>
           <Card className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -224,7 +224,7 @@ export default function PaperPortfolio() {
               </button>
             </div>
 
-            <div className="h-72">
+            <div className="h-96">
               {loading ? (
                 <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
               ) : (
@@ -280,7 +280,7 @@ export default function PaperPortfolio() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
             <Card>
               <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
             </Card>
@@ -296,7 +296,7 @@ export default function PaperPortfolio() {
                 <div
                   key={h.id}
                   onClick={() => setSelectedTicker(h.ticker)}
-                  className="flex items-center justify-between px-4 py-3 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
+                  className="flex items-center justify-between px-5 py-4 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
                 >
                   <div>
                     <p className="font-semibold">{h.ticker}</p>
