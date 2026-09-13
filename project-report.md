@@ -126,6 +126,12 @@ Build a personal website with two main sections:
 - **Relevance filter, added after the initial version let through unrelated articles.** Confirmed directly that Finnhub's `/company-news` `related` field is not a real relevance signal — it tags *every* returned article with the queried ticker regardless of actual topic (a query for a semiconductor holding returned an Adobe-earnings story and an IMF global-growth-forecast story, both tagged `"related": "MTSI"`). The cron route now keeps an article only if its own headline/summary text actually names the ticker symbol, the company's name (first significant word, fetched via `lib/sector.ts`'s `fetchCompanyName`), or a keyword derived from that holding's own `sector` (e.g. "Semiconductors" → "semiconductor") — i.e. "matching ticker or matching industry (as already shown in Market Exposure)," per the explicit ask. All whole-word, case-insensitive matches (`\bword\b`) to avoid substring false positives (a ticker like "MU" matching inside "Municipal"). Verified directly: re-running the cron dropped MTSI's 3 unrelated articles (none mentioned "MTSI", "MACOM", or "semiconductor") while keeping a genuinely on-topic FIGR article; the other three tickers simply had zero Finnhub coverage in the lookback window, confirming the filter isn't over-aggressive, just that there was nothing to filter for those.
 - **Setup:** `supabase/daily_briefing.sql` (table + RLS policy) has been run in the Supabase SQL editor. `CRON_SECRET` has been generated and added to Vercel's production environment via `vercel env add`; it's also in `.env.local` for local testing (the cron route was exercised manually with `curl -H "Authorization: Bearer $CRON_SECRET" ...` before Vercel's own scheduler ever ran it).
 
+### 4.11 Upcoming earnings calendar
+- **`app/EarningsCalendar.tsx`** — stacked directly below `DailyBriefing` in the same right-hand column (both inside `PaperPortfolio.tsx`). Fetches `/api/earnings-calendar` on mount; renders nothing if there are no upcoming events, same fail-safe pattern as the other homepage sections.
+- **`app/api/earnings-calendar/route.ts`** — public GET, **not cached** (unlike the daily briefing): reads the current `paper_portfolio` tickers and calls Finnhub's free `/calendar/earnings` endpoint per ticker (confirmed working on the free tier) for the next 90 days, resolves each ticker's company name via the same `fetchCompanyName` helper the briefing uses, sorts all events by date, and returns the soonest 10. Chose live-on-every-request over the briefing's once-a-day-cron approach because: (a) there was no "don't show a new position's data until tomorrow" requirement for this feature the way there was for the briefing, and (b) it's only one Finnhub call per portfolio ticker per page load — trivial against the 60/min free-tier limit for a personal-sized portfolio.
+- **Each row:** a date badge (weekday + day number), the company name, an honest market-timing label when Finnhub provides one (**"Before Market Open" / "After Market Close" / "During Market Hours"** — deliberately not a fabricated clock time; the free tier's `hour` field is only `bmo`/`amc`/`dmh`, not a precise time like the reference screenshot showed, and inventing one would be misleading), `Q{quarter} {year}` · EPS est. · Rev est. (revenue compacted to K/M/B), and a **"+ Add to calendar"** link that opens a prefilled Google Calendar event (all-day, title + EPS/Revenue estimates in the description) — no backend/ICS generation needed, just a `calendar.google.com/calendar/render` URL built client-side. Verified the generated links resolve to correctly-dated, correctly-titled events.
+- **Scope note:** "industry presentations/investor events" (asked for alongside earnings) were not built — no free API for that was found (see Section 9.3).
+
 ---
 
 ## 5. Database Schema (Supabase)
@@ -236,7 +242,7 @@ Research summary only — no Finary assets, code, or exact branding to be copied
 **Built — see Section 4.10.** Went straight to the automated path (headline roundup from Finnhub, not manual entry), generated once a day by a real Vercel Cron job rather than on-demand, per explicit requirements: (1) a ticker added to the paper portfolio shouldn't affect the briefing until the *next* day's run, and (2) "summarize" meant a headline roundup, not an AI-written prose summary (avoids adding a new paid LLM dependency).
 
 ### 9.3 Earnings call date tracker
-Not started. Finnhub has an earnings-calendar endpoint that may work on the free tier (unconfirmed — Finnhub's candle/historical data being paid-only doesn't necessarily mean earnings calendar is also restricted; should be verified directly before building).
+**Built (earnings only) — see Section 4.11.** Confirmed directly that Finnhub's `/calendar/earnings` endpoint works on the free tier. "Industry presentations/investor events" (also requested alongside this) were **not** built — no free data source for that was found; Finnhub's free-tier calendar endpoints cover earnings, IPOs, and economic events, not company-specific investor conferences/presentations. Revisit if a source turns up.
 
 ### 9.4 Projects tab
 Not started. Originally scoped as a separate route/tab displaying research papers and modeling work — titles, short descriptions, and links or embedded PDFs, likely stored directly in the GitHub repo or Supabase storage rather than a separate hosting service.
@@ -257,6 +263,7 @@ app/
     cron/
       daily-briefing/route.ts  (Vercel Cron target, gated by CRON_SECRET — not an admin-session route)
     daily-briefing/route.ts    (public GET, just reads the cached row)
+    earnings-calendar/route.ts (public GET, live — not cached, see Section 4.11)
     history/route.ts
     paper-portfolio/
       route.ts
@@ -276,6 +283,7 @@ app/
   StockChart.tsx          (still used — now opened from PaperPortfolio's holdings table, not the removed PriceList)
   PaperPortfolio.tsx
   DailyBriefing.tsx
+  EarningsCalendar.tsx
   globals.css
 lib/
   supabaseClient.ts     (public anon-key client)

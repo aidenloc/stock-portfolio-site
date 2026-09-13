@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 import StockChart from './StockChart'
 import DailyBriefing from './DailyBriefing'
+import EarningsCalendar from './EarningsCalendar'
 
 const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
 type Period = (typeof PERIODS)[number]
@@ -314,7 +315,10 @@ export default function PaperPortfolio() {
           </Card>
         </div>
 
-        <DailyBriefing />
+        <div className="space-y-6">
+          <DailyBriefing />
+          <EarningsCalendar />
+        </div>
       </div>
 
       {selectedTicker && <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />}
