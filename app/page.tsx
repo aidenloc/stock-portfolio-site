@@ -5,7 +5,7 @@ import Footer from './Footer'
 import ContactLinks from './ContactLinks'
 import PortfolioPreviewCard from './PortfolioPreviewCard'
 import { ArrowIcon } from './icons'
-import { POSITIONING, THESIS, NOW, SKILL_GROUPS, CONTACT } from '@/lib/siteContent'
+import { POSITIONING, THESIS } from '@/lib/siteContent'
 import { CURRENT_ROLE } from '@/lib/experience'
 import { PROJECTS } from '@/lib/projects'
 
@@ -91,55 +91,6 @@ export default function Home() {
           cta="Read more"
           href={project.href}
         />
-      </section>
-
-      {/* Skills & tools */}
-      <section className="max-w-4xl mb-16">
-        <p className="text-xs uppercase tracking-widest text-gray-500 mb-5">Skills &amp; Tools</p>
-        <div className="space-y-4">
-          {SKILL_GROUPS.map((group) => (
-            <div key={group.category} className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4">
-              <p className="text-sm text-gray-500 sm:w-52 shrink-0">{group.category}</p>
-              <div className="flex flex-wrap gap-2">
-                {group.items.map((item) => (
-                  <span
-                    key={item}
-                    className="text-xs border border-[var(--color-text)]/15 rounded-[var(--border-radius)] px-2.5 py-1 text-gray-300"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Now */}
-      <section className="max-w-3xl mb-16">
-        <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Now</p>
-        <p className="text-sm text-gray-400">{NOW}</p>
-      </section>
-
-      {/* Footer CTA */}
-      <section className="max-w-3xl mb-4 pt-8 border-t border-[var(--color-text)]/10">
-        <p className="text-sm text-gray-400 mb-4">Get in touch.</p>
-        <div className="flex flex-wrap gap-6 text-sm">
-          <a
-            href={`mailto:${CONTACT.email}`}
-            className="text-gray-400 hover:text-[var(--color-text)] transition-colors"
-          >
-            {CONTACT.email}
-          </a>
-          <a
-            href={CONTACT.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[var(--color-text)] transition-colors"
-          >
-            LinkedIn
-          </a>
-        </div>
       </section>
 
       <Footer />
