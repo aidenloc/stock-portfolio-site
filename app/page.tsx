@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Header from './Header'
 import Footer from './Footer'
 import ContactLinks from './ContactLinks'
 import PortfolioPreviewCard from './PortfolioPreviewCard'
@@ -59,9 +58,7 @@ export default function Home() {
   const project = PROJECTS[0]
 
   return (
-    <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
-      <Header />
-
+    <>
       {/* Hero */}
       <section className="max-w-3xl mt-8 mb-14">
         <h1 className="text-5xl sm:text-6xl font-bold mb-4">Aiden Loc</h1>
@@ -94,6 +91,6 @@ export default function Home() {
       </section>
 
       <Footer />
-    </main>
+    </>
   )
 }

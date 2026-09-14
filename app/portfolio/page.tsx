@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import PaperPortfolio from '../PaperPortfolio'
-import Header from '../Header'
 import Footer from '../Footer'
 
 const DESCRIPTION =
@@ -21,10 +20,9 @@ export const metadata: Metadata = {
 
 export default function PortfolioPage() {
   return (
-    <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
-      <Header />
+    <>
       <PaperPortfolio />
       <Footer />
-    </main>
+    </>
   )
 }

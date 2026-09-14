@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Header from '../Header'
 import Footer from '../Footer'
 import ContactLinks from '../ContactLinks'
 import { ArrowIcon } from '../icons'
@@ -122,9 +121,7 @@ function CertificationCard({
 
 export default function ExperiencePage() {
   return (
-    <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
-      <Header />
-
+    <>
       <div className="max-w-3xl mb-16">
         <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
         <ContactLinks />
@@ -177,6 +174,6 @@ export default function ExperiencePage() {
       </div>
 
       <Footer />
-    </main>
+    </>
   )
 }

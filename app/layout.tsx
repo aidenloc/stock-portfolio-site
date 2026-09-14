@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { supabase } from "@/lib/supabaseClient";
+import SiteChrome from "./SiteChrome";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -106,7 +107,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           fontFamily: 'var(--font-family)',
         }}
       >
-        {children}
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );
