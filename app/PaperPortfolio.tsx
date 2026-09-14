@@ -1,6 +1,13 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState, useCallback } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  ViewTransition,
+} from 'react'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -395,13 +402,20 @@ function PortfolioSkeleton() {
         Loading portfolio data
       </p>
       <section className="mb-[calc(var(--spacing-unit)*3rem)] animate-pulse" aria-hidden="true">
-        <div className="max-w-xl mb-5 space-y-2">
-          <SkeletonBlock className="h-3 w-full" />
-          <SkeletonBlock className="h-3 w-2/3" />
-        </div>
-        <SkeletonBlock className="h-3 w-28 mb-3" />
-        <SkeletonBlock className="h-14 w-72 mb-3" />
-        <SkeletonBlock className="h-4 w-56 mb-8" />
+        {/* Carries the morph target name too: the skeleton is what's on screen at
+            the moment navigation commits, so if only the loaded state were named
+            the pair wouldn't exist yet and no morph would form. */}
+        <ViewTransition name="portfolio-hero" share="morph" default="none">
+          <div className="mb-8">
+            <div className="max-w-xl mb-5 space-y-2">
+              <SkeletonBlock className="h-3 w-full" />
+              <SkeletonBlock className="h-3 w-2/3" />
+            </div>
+            <SkeletonBlock className="h-3 w-28 mb-3" />
+            <SkeletonBlock className="h-14 w-72 mb-3" />
+            <SkeletonBlock className="h-4 w-56" />
+          </div>
+        </ViewTransition>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
           <div>
@@ -564,33 +578,41 @@ export default function PaperPortfolio() {
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
-      <p className="text-sm text-gray-400 max-w-xl mb-5">
-        A simulated portfolio I manage to practice equity research and macro positioning — real trade
-        decisions, tracked against the S&amp;P 500, with no real capital at risk.
-      </p>
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
-      <h1
-        className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2"
-        aria-label={money(data.totalValue)}
-      >
-        <CountUpMoney value={data.totalValue} />
-      </h1>
-      <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span className={`text-sm font-medium ${periodUp ? 'text-green-300' : 'text-red-300'}`}>
-          {signedMoney(periodDollarChange)}
-        </span>
-        <GainBadge value={periodReturnPct} size="md">
-          {signedPct(periodReturnPct)} · {period}
-        </GainBadge>
-      </div>
-      <p className="text-xs text-gray-500 mb-8">Tracked for performance only — not real money.</p>
+      {/* The home page's Portfolio card morphs into this block. */}
+      <ViewTransition name="portfolio-hero" share="morph" default="none">
+        <div className="mb-8">
+          <p className="text-sm text-gray-400 max-w-xl mb-5">
+            A simulated portfolio I manage to practice equity research and macro positioning — real trade
+            decisions, tracked against the S&amp;P 500, with no real capital at risk.
+          </p>
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
+          <h1
+            className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2"
+            aria-label={money(data.totalValue)}
+          >
+            <CountUpMoney value={data.totalValue} />
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className={`text-sm font-medium ${periodUp ? 'text-green-300' : 'text-red-300'}`}>
+              {signedMoney(periodDollarChange)}
+            </span>
+            <GainBadge value={periodReturnPct} size="md">
+              {signedPct(periodReturnPct)} · {period}
+            </GainBadge>
+          </div>
+          <p className="text-xs text-gray-500">Tracked for performance only — not real money.</p>
+        </div>
+      </ViewTransition>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-        {/* min-w-0 is load-bearing: a grid item defaults to min-width:auto, so the
-            1fr track couldn't shrink below the holdings table's 847px min-content
-            and the whole page scrolled sideways between 1024px and ~1323px. With
-            the track free to shrink, the table's own overflow-x-auto takes over. */}
-        <div className="min-w-0">
+      {/* Everything below the hero arrives a beat later (see .rise in globals.css)
+          so the morph stays the primary motion rather than competing with it. */}
+      <ViewTransition enter="rise" default="none">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+          {/* min-w-0 is load-bearing: a grid item defaults to min-width:auto, so the
+              1fr track couldn't shrink below the holdings table's 847px min-content
+              and the whole page scrolled sideways between 1024px and ~1323px. With
+              the track free to shrink, the table's own overflow-x-auto takes over. */}
+          <div className="min-w-0">
           <Card className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               {/* Selected state was conveyed by colour alone; aria-pressed makes it
@@ -961,11 +983,12 @@ export default function PaperPortfolio() {
           </Card>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-          <DailyBriefing />
-          <EarningsCalendar />
+          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <DailyBriefing />
+            <EarningsCalendar />
+          </div>
         </div>
-      </div>
+      </ViewTransition>
 
       {selectedTicker && <StockChart ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />}
     </section>

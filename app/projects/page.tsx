@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ViewTransition } from 'react'
 import Header from '../Header'
 import Footer from '../Footer'
 import Card from '../Card'
@@ -35,9 +36,16 @@ export default function ProjectsPage() {
       <Header />
 
       <div className="max-w-2xl">
-        <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Projects</p>
-        <h1 className="text-4xl font-bold mb-8">Research &amp; Modeling</h1>
+        {/* The home page's Projects card morphs into this block. */}
+        <ViewTransition name="projects-hero" share="morph" default="none">
+          <div className="mb-8">
+            <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Projects</p>
+            <h1 className="text-4xl font-bold">Research &amp; Modeling</h1>
+          </div>
+        </ViewTransition>
 
+        {/* Arrives a beat after the morph, so the morph reads as the primary motion. */}
+        <ViewTransition enter="rise" default="none">
         <Card>
           {/* Title/tags come from lib/projects so the home page's preview card
               can reference this project without restating it. */}
@@ -121,6 +129,7 @@ export default function ProjectsPage() {
             View Source on GitHub <ArrowIcon />
           </a>
         </Card>
+        </ViewTransition>
       </div>
 
       <Footer />

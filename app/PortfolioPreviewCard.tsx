@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ViewTransition } from 'react'
 import Link from 'next/link'
 import { ArrowIcon } from './icons'
 
@@ -82,39 +82,45 @@ export default function PortfolioPreviewCard() {
   const up = (todayPct ?? 0) >= 0
 
   return (
-    <Link
-      href="/portfolio"
-      className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
-                 border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
-    >
-      <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">Portfolio</p>
+    // The card and /portfolio's hero share this name, so the browser morphs one
+    // into the other on navigation. share="morph" must stay alongside
+    // default="none" -- with the default suppressed and no explicit share, the
+    // pair silently stops morphing.
+    <ViewTransition name="portfolio-hero" share="morph" default="none">
+      <Link
+        href="/portfolio"
+        className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
+                   border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
+      >
+        <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">Portfolio</p>
 
-      <div className="flex items-end justify-between gap-3 mb-2 min-h-[42px]">
-        <div>
-          <p className="text-xs text-gray-500 mb-0.5">Today</p>
-          {todayPct === null ? (
-            <span className={`text-2xl font-bold ${failed ? 'text-gray-600' : 'animate-pulse text-gray-700'}`}>
-              {failed ? '—' : '···'}
-            </span>
-          ) : (
-            <span className={`text-2xl font-bold tabular-nums ${up ? 'text-green-300' : 'text-red-300'}`}>
-              {up ? '+' : ''}
-              {todayPct.toFixed(2)}%
-            </span>
+        <div className="flex items-end justify-between gap-3 mb-2 min-h-[42px]">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">Today</p>
+            {todayPct === null ? (
+              <span className={`text-2xl font-bold ${failed ? 'text-gray-600' : 'animate-pulse text-gray-700'}`}>
+                {failed ? '—' : '···'}
+              </span>
+            ) : (
+              <span className={`text-2xl font-bold tabular-nums ${up ? 'text-green-300' : 'text-red-300'}`}>
+                {up ? '+' : ''}
+                {todayPct.toFixed(2)}%
+              </span>
+            )}
+          </div>
+          {series && series.length > 1 && (
+            <Sparkline values={series.map((p) => p.portfolioReturnPct)} up={up} />
           )}
         </div>
-        {series && series.length > 1 && (
-          <Sparkline values={series.map((p) => p.portfolioReturnPct)} up={up} />
-        )}
-      </div>
 
-      <p className="text-sm text-gray-400 mb-4">
-        A simulated portfolio tracked against the S&amp;P 500, with a thesis behind each position.
-      </p>
+        <p className="text-sm text-gray-400 mb-4">
+          A simulated portfolio tracked against the S&amp;P 500, with a thesis behind each position.
+        </p>
 
-      <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
-        View portfolio <ArrowIcon />
-      </span>
-    </Link>
+        <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
+          View portfolio <ArrowIcon />
+        </span>
+      </Link>
+    </ViewTransition>
   )
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ViewTransition } from 'react'
 import Header from '../Header'
 import Footer from '../Footer'
 import ContactLinks from '../ContactLinks'
@@ -49,11 +50,14 @@ function TimelineEntry({ entry, isLast }: { entry: ExperienceEntry; isLast: bool
         className="absolute left-0 top-[5px] w-[11px] h-[11px] rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg)]"
       />
 
-      <div className="flex justify-between items-baseline gap-4">
+      {/* flex-wrap matters at phone width: the dates carry whitespace-nowrap, so
+          holding them on the same line as the org forced a 334px min-content and
+          pushed the page past a 390px viewport. Wrapping lets them drop below. */}
+      <div className="flex flex-wrap justify-between items-baseline gap-x-4">
         <h3 className="font-semibold">{entry.org}</h3>
         <span className="text-xs text-gray-500 whitespace-nowrap">{entry.location}</span>
       </div>
-      <div className="flex justify-between items-baseline gap-4 mb-2">
+      <div className="flex flex-wrap justify-between items-baseline gap-x-4 mb-2">
         <p className="text-sm italic text-gray-400">
           {entry.role}
           <span className="not-italic text-[10px] uppercase tracking-widest text-gray-600 ml-2">
@@ -122,12 +126,17 @@ export default function ExperiencePage() {
     <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
       <Header />
 
-      <div className="max-w-3xl mb-16">
-        <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
-        <ContactLinks />
-      </div>
+      {/* The home page's Experience card morphs into this block. */}
+      <ViewTransition name="experience-hero" share="morph" default="none">
+        <div className="max-w-3xl mb-16">
+          <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
+          <ContactLinks />
+        </div>
+      </ViewTransition>
 
-      <div className="max-w-3xl">
+      {/* Arrives a beat after the morph, so the morph reads as the primary motion. */}
+      <ViewTransition enter="rise" default="none">
+        <div className="max-w-3xl">
         {/* Education, work and extracurriculars share one chronological thread
             rather than three separately-labelled stacks; each entry keeps a small
             kind label so the distinction isn't lost in the merge. */}
@@ -170,8 +179,9 @@ export default function ExperiencePage() {
             Microsoft Office 365, Data Analysis, Basic Programming (Python), Strong Writing, Research Skills, Document
             Review
           </p>
+          </div>
         </div>
-      </div>
+      </ViewTransition>
 
       <Footer />
     </main>
