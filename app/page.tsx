@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { ViewTransition } from 'react'
 import Link from 'next/link'
 import Header from './Header'
 import Footer from './Footer'
@@ -33,33 +32,26 @@ function PreviewCard({
   body,
   cta,
   href,
-  transitionName,
 }: {
   eyebrow: string
   title: string
   body: string
   cta: string
   href: string
-  transitionName: string
 }) {
   return (
-    // Pairs with the matching name on the destination page's hero, so the card
-    // morphs into it. share="morph" must accompany default="none" -- without the
-    // explicit share, the pair silently stops morphing.
-    <ViewTransition name={transitionName} share="morph" default="none">
-      <Link
-        href={href}
-        className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
-                   border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
-      >
-        <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">{eyebrow}</p>
-        <h3 className="font-semibold text-lg mb-2">{title}</h3>
-        <p className="text-sm text-gray-400 mb-4">{body}</p>
-        <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
-          {cta} <ArrowIcon />
-        </span>
-      </Link>
-    </ViewTransition>
+    <Link
+      href={href}
+      className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
+                 border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
+    >
+      <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">{eyebrow}</p>
+      <h3 className="font-semibold text-lg mb-2">{title}</h3>
+      <p className="text-sm text-gray-400 mb-4">{body}</p>
+      <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
+        {cta} <ArrowIcon />
+      </span>
+    </Link>
   )
 }
 
@@ -91,7 +83,6 @@ export default function Home() {
           body={`${CURRENT_ROLE.org} · ${CURRENT_ROLE.dates}`}
           cta="View full experience"
           href="/experience"
-          transitionName="experience-hero"
         />
         <PreviewCard
           eyebrow="Projects"
@@ -99,7 +90,6 @@ export default function Home() {
           body={project.teaser}
           cta="Read more"
           href={project.href}
-          transitionName="projects-hero"
         />
       </section>
 

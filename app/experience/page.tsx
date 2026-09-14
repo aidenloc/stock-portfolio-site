@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { ViewTransition } from 'react'
 import Header from '../Header'
 import Footer from '../Footer'
 import ContactLinks from '../ContactLinks'
@@ -126,17 +125,12 @@ export default function ExperiencePage() {
     <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
       <Header />
 
-      {/* The home page's Experience card morphs into this block. */}
-      <ViewTransition name="experience-hero" share="morph" default="none">
-        <div className="max-w-3xl mb-16">
-          <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
-          <ContactLinks />
-        </div>
-      </ViewTransition>
+      <div className="max-w-3xl mb-16">
+        <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
+        <ContactLinks />
+      </div>
 
-      {/* Arrives a beat after the morph, so the morph reads as the primary motion. */}
-      <ViewTransition enter="rise" default="none">
-        <div className="max-w-3xl">
+      <div className="max-w-3xl">
         {/* Education, work and extracurriculars share one chronological thread
             rather than three separately-labelled stacks; each entry keeps a small
             kind label so the distinction isn't lost in the merge. */}
@@ -179,9 +173,8 @@ export default function ExperiencePage() {
             Microsoft Office 365, Data Analysis, Basic Programming (Python), Strong Writing, Research Skills, Document
             Review
           </p>
-          </div>
         </div>
-      </ViewTransition>
+      </div>
 
       <Footer />
     </main>
