@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="mt-16 pt-6 border-t border-[var(--color-text)]/10 flex items-center justify-center gap-3 text-xs text-gray-500">
       <span>© {new Date().getFullYear()} Aiden Loc</span>
       <span className="text-gray-700">·</span>
-      <a href="/admin/login" className="hover:text-gray-400">
+      <a href="/admin/login" className="hover:text-[var(--color-text)] transition-colors">
         Admin
       </a>
     </footer>

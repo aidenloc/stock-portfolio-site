@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useRef, useState, useCallback } from 'react'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -242,6 +242,41 @@ function formatLabel(timestamp: number, period: Period): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+// Brief count-up on the headline figure. Three things keep it from being a
+// liability on the first number a reader looks at: it honours
+// prefers-reduced-motion, it starts at the final value (not zero) when motion is
+// reduced so there's no flash, and the h1 carries the true figure as an
+// aria-label so assistive tech never announces the intermediate numbers.
+// It only ever runs once -- totalValue is all-time, so switching periods must
+// not re-trigger it.
+const COUNT_UP_MS = 750
+
+function CountUpMoney({ value }: { value: number }) {
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [shown, setShown] = useState(() => (prefersReduced ? value : 0))
+  const hasAnimated = useRef(false)
+
+  useEffect(() => {
+    if (hasAnimated.current || prefersReduced) {
+      setShown(value)
+      return
+    }
+    hasAnimated.current = true
+
+    const start = performance.now()
+    let raf = requestAnimationFrame(function tick(now) {
+      const t = Math.min(1, (now - start) / COUNT_UP_MS)
+      setShown(value * (1 - Math.pow(1 - t, 3)))
+      if (t < 1) raf = requestAnimationFrame(tick)
+      else setShown(value)
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [value, prefersReduced])
+
+  return <>{money(shown)}</>
+}
+
 function SkeletonBlock({ className = '' }: { className?: string }) {
   return <div className={`bg-[var(--color-text)]/10 rounded-[var(--border-radius)] ${className}`} />
 }
@@ -386,7 +421,12 @@ export default function PaperPortfolio() {
         decisions, tracked against the S&amp;P 500, with no real capital at risk.
       </p>
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
-      <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">{money(data.totalValue)}</h1>
+      <h1
+        className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2"
+        aria-label={money(data.totalValue)}
+      >
+        <CountUpMoney value={data.totalValue} />
+      </h1>
       <div className="flex flex-wrap items-center gap-2 mb-1">
         <span className={`text-sm font-medium ${periodUp ? 'text-green-300' : 'text-red-300'}`}>
           {signedMoney(periodDollarChange)}

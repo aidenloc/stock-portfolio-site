@@ -129,7 +129,7 @@ function CertificationCard({
   url: string
 }) {
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
+    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)] border border-transparent hover:border-[var(--color-text)]/10 transition-colors">
       <div className="mb-4">{icon}</div>
       <h3 className="font-semibold text-xl mb-1">{name}</h3>
       <p className="text-xs uppercase tracking-widest text-gray-500 mb-5">{issuer}</p>
