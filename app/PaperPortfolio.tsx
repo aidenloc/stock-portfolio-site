@@ -43,6 +43,7 @@ type Holding = {
   entryPrice: number
   entryDate: string
   sector: string | null
+  thesis: string | null
   currentPrice: number
   currentValue: number
   gainDollar: number
@@ -146,6 +147,16 @@ export default function PaperPortfolio() {
   const [loading, setLoading] = useState(true)
   const [showBenchmark, setShowBenchmark] = useState(true)
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+
+  function toggleExpanded(id: number) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true)
@@ -175,6 +186,10 @@ export default function PaperPortfolio() {
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
+      <p className="text-sm text-gray-400 max-w-xl mb-5">
+        A simulated portfolio I manage to practice equity research and macro positioning — real trade
+        decisions, tracked against the S&amp;P 500, with no real capital at risk.
+      </p>
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
       <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">
         ${data.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -189,7 +204,7 @@ export default function PaperPortfolio() {
           {periodReturnPct.toFixed(2)}% · {period}
         </GainBadge>
       </div>
-      <p className="text-xs text-gray-500 mb-8">Simulated portfolio, tracked for performance only — not real money.</p>
+      <p className="text-xs text-gray-500 mb-8">Tracked for performance only — not real money.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
         <div>
@@ -288,27 +303,61 @@ export default function PaperPortfolio() {
           <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
             <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
             <div>
-              {data.holdings.map((h) => (
-                <div
-                  key={h.id}
-                  onClick={() => setSelectedTicker(h.ticker)}
-                  className="flex items-center justify-between px-5 py-4 rounded-[var(--border-radius)] cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
-                >
-                  <div>
-                    <p className="font-semibold">{h.ticker}</p>
-                    <p className="text-xs text-gray-500">{h.shares} shares</p>
+              {data.holdings.map((h) => {
+                const expanded = expandedIds.has(h.id)
+                return (
+                  <div key={h.id} className="rounded-[var(--border-radius)] hover:bg-[var(--color-text)]/5 transition-colors">
+                    <div
+                      onClick={() => setSelectedTicker(h.ticker)}
+                      className="flex items-center justify-between px-5 py-4 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <div>
+                          <p className="font-semibold">{h.ticker}</p>
+                          <p className="text-xs text-gray-500">{h.shares} shares</p>
+                        </div>
+                        {h.thesis && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(h.id)
+                            }}
+                            aria-label={expanded ? `Hide investment thesis for ${h.ticker}` : `Show investment thesis for ${h.ticker}`}
+                            aria-expanded={expanded}
+                            className="text-gray-500 hover:text-[var(--color-text)] transition-colors p-1.5 rounded-full"
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+                            >
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium tabular-nums">
+                          ${h.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <GainBadge value={h.gainDollar}>
+                          {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
+                          {h.gainPct.toFixed(2)}%)
+                        </GainBadge>
+                      </div>
+                    </div>
+                    {expanded && h.thesis && (
+                      <p className="text-sm text-gray-400 italic px-5 pb-4 -mt-1 max-w-lg">{h.thesis}</p>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium tabular-nums">
-                      ${h.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <GainBadge value={h.gainDollar}>
-                      {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
-                      {h.gainPct.toFixed(2)}%)
-                    </GainBadge>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
         </div>

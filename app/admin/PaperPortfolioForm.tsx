@@ -9,12 +9,15 @@ type Holding = {
   shares: number
   entry_price: number
   entry_date: string
+  thesis: string | null
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
 
 const inputClasses =
   'bg-[var(--color-bg)] border border-[var(--color-text)]/15 rounded-[var(--border-radius)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-gray-500 focus:outline-none focus:border-[var(--color-primary)]/60'
+
+const thesisClasses = `${inputClasses} w-full resize-none`
 
 function AddButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -39,6 +42,7 @@ function EditRow({
   const [ticker, setTicker] = useState(holding.ticker)
   const [shares, setShares] = useState(String(holding.shares))
   const [entryDate, setEntryDate] = useState(holding.entry_date)
+  const [thesis, setThesis] = useState(holding.thesis ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -49,7 +53,7 @@ function EditRow({
     const res = await fetch('/api/paper-portfolio', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: holding.id, ticker, shares, entryDate }),
+      body: JSON.stringify({ id: holding.id, ticker, shares, entryDate, thesis }),
     })
     const data = await res.json()
     setSaving(false)
@@ -92,6 +96,13 @@ function EditRow({
       <button onClick={onCancel} className="text-xs text-gray-500 hover:text-gray-300">
         Cancel
       </button>
+      <textarea
+        placeholder="Investment thesis (optional, shown publicly on the homepage)"
+        value={thesis}
+        onChange={(e) => setThesis(e.target.value)}
+        rows={2}
+        className={thesisClasses}
+      />
       {error && <p className="w-full text-xs text-red-400">{error}</p>}
     </div>
   )
@@ -101,6 +112,7 @@ export default function PaperPortfolioForm({ holdings }: { holdings: Holding[] }
   const [ticker, setTicker] = useState('')
   const [shares, setShares] = useState('')
   const [entryDate, setEntryDate] = useState(today)
+  const [thesis, setThesis] = useState('')
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const router = useRouter()
@@ -109,7 +121,7 @@ export default function PaperPortfolioForm({ holdings }: { holdings: Holding[] }
     const res = await fetch('/api/paper-portfolio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker, shares, entryDate }),
+      body: JSON.stringify({ ticker, shares, entryDate, thesis }),
     })
     const data = await res.json()
     if (!res.ok) {
@@ -119,6 +131,7 @@ export default function PaperPortfolioForm({ holdings }: { holdings: Holding[] }
       setTicker('')
       setShares('')
       setEntryDate(today())
+      setThesis('')
       router.refresh()
     }
   }
@@ -169,6 +182,13 @@ export default function PaperPortfolioForm({ holdings }: { holdings: Holding[] }
         />
         <AddButton onClick={handleAdd}>Add</AddButton>
       </div>
+      <textarea
+        placeholder="Investment thesis (optional, shown publicly on the homepage)"
+        value={thesis}
+        onChange={(e) => setThesis(e.target.value)}
+        rows={2}
+        className={`${thesisClasses} mb-4`}
+      />
       {message && <p className="mb-3 text-sm text-gray-400">{message}</p>}
       <div className="space-y-1">
         {holdings.map((h) =>
@@ -185,13 +205,20 @@ export default function PaperPortfolioForm({ holdings }: { holdings: Holding[] }
           ) : (
             <div
               key={h.id}
-              className="flex justify-between items-center px-4 py-3 rounded-[var(--border-radius)] hover:bg-[var(--color-text)]/5 transition-colors"
+              className="flex justify-between items-start gap-4 px-4 py-3 rounded-[var(--border-radius)] hover:bg-[var(--color-text)]/5 transition-colors"
             >
-              <span className="text-sm">
-                <span className="font-semibold">{h.ticker}</span> — {h.shares} sh @ $
-                {Number(h.entry_price).toFixed(2)} ({h.entry_date})
-              </span>
-              <span className="flex items-center gap-4">
+              <div>
+                <span className="text-sm">
+                  <span className="font-semibold">{h.ticker}</span> — {h.shares} sh @ $
+                  {Number(h.entry_price).toFixed(2)} ({h.entry_date})
+                </span>
+                {h.thesis ? (
+                  <p className="text-xs text-gray-500 italic mt-1 max-w-xl">{h.thesis}</p>
+                ) : (
+                  <p className="text-xs text-gray-600 italic mt-1">No thesis set</p>
+                )}
+              </div>
+              <span className="flex items-center gap-4 flex-shrink-0">
                 <button
                   onClick={() => setEditingId(h.id)}
                   className="text-xs text-gray-400 hover:text-[var(--color-text)]"

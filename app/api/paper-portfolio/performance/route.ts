@@ -24,6 +24,7 @@ type Holding = {
   entry_price: number
   entry_date: string
   sector: string | null
+  thesis: string | null
 }
 
 // Forward-fills: latest known price at or before `targetTime`. `points` must be sorted ascending by time.
@@ -146,6 +147,7 @@ export async function GET(request: Request) {
       entryPrice: h.entry_price,
       entryDate: h.entry_date,
       sector: h.sector,
+      thesis: h.thesis,
       currentPrice,
       currentValue,
       gainDollar: currentValue - costBasis,

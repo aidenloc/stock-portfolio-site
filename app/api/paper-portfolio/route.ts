@@ -17,7 +17,7 @@ async function checkAuth() {
 // Shared by POST (new holding) and PUT (edit) — validates inputs and resolves
 // the entry price for a ticker/date pair (today's live quote, or that day's
 // Yahoo closing price for a back-dated entry).
-async function resolveEntry(ticker: unknown, shares: unknown, entryDate: unknown) {
+async function resolveEntry(ticker: unknown, shares: unknown, entryDate: unknown, thesis: unknown) {
   if (!ticker || typeof ticker !== 'string') {
     return { error: 'Invalid ticker' } as const
   }
@@ -61,6 +61,7 @@ async function resolveEntry(ticker: unknown, shares: unknown, entryDate: unknown
   }
 
   const sector = await fetchSector(upperTicker)
+  const trimmedThesis = typeof thesis === 'string' ? thesis.trim() : ''
 
   return {
     ticker: upperTicker,
@@ -68,6 +69,7 @@ async function resolveEntry(ticker: unknown, shares: unknown, entryDate: unknown
     entry_price: entryPrice,
     entry_date: resolvedEntryDate,
     sector,
+    thesis: trimmedThesis || null,
   } as const
 }
 
@@ -90,9 +92,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const { ticker, shares, entryDate } = await request.json()
+  const { ticker, shares, entryDate, thesis } = await request.json()
 
-  const resolved = await resolveEntry(ticker, shares, entryDate)
+  const resolved = await resolveEntry(ticker, shares, entryDate, thesis)
   if ('error' in resolved) {
     return NextResponse.json({ error: resolved.error }, { status: 400 })
   }
@@ -112,13 +114,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const { id, ticker, shares, entryDate } = await request.json()
+  const { id, ticker, shares, entryDate, thesis } = await request.json()
 
   if (!id) {
     return NextResponse.json({ error: 'Missing id' }, { status: 400 })
   }
 
-  const resolved = await resolveEntry(ticker, shares, entryDate)
+  const resolved = await resolveEntry(ticker, shares, entryDate, thesis)
   if ('error' in resolved) {
     return NextResponse.json({ error: resolved.error }, { status: 400 })
   }
