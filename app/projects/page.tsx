@@ -1,6 +1,23 @@
+import type { Metadata } from 'next'
 import Header from '../Header'
 import Footer from '../Footer'
 import Card from '../Card'
+
+const DESCRIPTION =
+  'Engineering and research write-ups — including a full case study on building this portfolio tracker with Next.js, Supabase, and Vercel.'
+
+export const metadata: Metadata = {
+  title: 'Projects',
+  description: DESCRIPTION,
+  alternates: { canonical: '/projects' },
+  // `images` repeated deliberately -- see the note in app/experience/page.tsx.
+  openGraph: {
+    title: 'Projects | Aiden Loc',
+    description: DESCRIPTION,
+    url: '/projects',
+    images: ['/opengraph-image'],
+  },
+}
 
 function ArrowIcon() {
   return (

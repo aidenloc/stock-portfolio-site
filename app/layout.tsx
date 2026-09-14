@@ -13,9 +13,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://stock-portfolio-site.vercel.app";
+const SITE_DESCRIPTION =
+  "Aiden Loc — a simulated equity portfolio tracked against the S&P 500, plus resume and engineering projects.";
+
 export const metadata: Metadata = {
-  title: "My Portfolio",
-  description: "Personal stock portfolio tracker",
+  // Required for the OG image and other relative metadata URLs to resolve to
+  // absolute ones; without it Next warns and social crawlers get a broken path.
+  metadataBase: new URL(SITE_URL),
+  // Each route sets its own short title and it renders as "Portfolio | Aiden Loc".
+  title: {
+    default: "Aiden Loc — Paper Portfolio & Equity Research",
+    template: "%s | Aiden Loc",
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "Aiden Loc",
+    url: SITE_URL,
+    title: "Aiden Loc — Paper Portfolio & Equity Research",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Aiden Loc — Paper Portfolio & Equity Research",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 // The layout's own settings fetch has no Request-time API, so without this,

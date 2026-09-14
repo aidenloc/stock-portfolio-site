@@ -1,5 +1,26 @@
+import type { Metadata } from 'next'
 import Header from '../Header'
 import Footer from '../Footer'
+
+const DESCRIPTION =
+  'Aiden Loc — education, work experience, certifications, and technical skills. Business Administration at University at Buffalo.'
+
+export const metadata: Metadata = {
+  title: 'Experience',
+  description: DESCRIPTION,
+  alternates: { canonical: '/experience' },
+  // openGraph doesn't inherit this segment's own `title`; without setting it
+  // here every route shares the root's og:title when shared on LinkedIn.
+  // `images` must be repeated too: declaring openGraph in a child segment
+  // REPLACES the parent's object, which drops the image that app/opengraph-image.tsx
+  // contributes to the root -- verified by og:image going null here without it.
+  openGraph: {
+    title: 'Experience | Aiden Loc',
+    description: DESCRIPTION,
+    url: '/experience',
+    images: ['/opengraph-image'],
+  },
+}
 
 function SectionHeading({ number, title }: { number: string; title: string }) {
   return (

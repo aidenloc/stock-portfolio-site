@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import { supabase } from '@/lib/supabaseClient'
 import PaperPortfolioForm from './PaperPortfolioForm'
+
+// robots noindex is set for the whole /admin subtree in ./layout.tsx.
+export const metadata: Metadata = {
+  title: 'Admin',
+}
 import LogoutButton from './LogoutButton'
 import ThemeEditor from './ThemeEditor'
 import Card from '../Card'
