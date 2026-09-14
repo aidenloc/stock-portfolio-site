@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -46,8 +46,50 @@ type Holding = {
   thesis: string | null
   currentPrice: number
   currentValue: number
+  dayChangeDollar: number | null
+  dayChangePct: number | null
   gainDollar: number
   gainPct: number
+}
+
+// One formatter for every currency figure on this page. Kept central because
+// the headline once shipped as "$16,540.3" -- toLocaleString caps decimals with
+// maximumFractionDigits but won't pad to two without the minimum as well.
+const money = (n: number) =>
+  `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const signedMoney = (n: number) => `${n >= 0 ? '+' : '-'}${money(Math.abs(n))}`
+const signedPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
+
+type HoldingRow = Holding & { weightPct: number }
+type SortKey = keyof Pick<
+  HoldingRow,
+  'ticker' | 'shares' | 'entryPrice' | 'currentPrice' | 'currentValue' | 'dayChangePct' | 'gainDollar' | 'weightPct'
+>
+
+const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
+  { key: 'ticker', label: 'Ticker', numeric: false },
+  { key: 'shares', label: 'Shares', numeric: true },
+  { key: 'entryPrice', label: 'Avg Cost', numeric: true },
+  { key: 'currentPrice', label: 'Price', numeric: true },
+  { key: 'currentValue', label: 'Market Value', numeric: true },
+  { key: 'dayChangePct', label: 'Day', numeric: true },
+  { key: 'gainDollar', label: 'Total Gain/Loss', numeric: true },
+  { key: 'weightPct', label: 'Weight', numeric: true },
+]
+
+// Nulls (a holding whose prior close couldn't be resolved) always sort last, in
+// both directions — flipping direction shouldn't drag empty cells to the top.
+function sortRows(rows: HoldingRow[], key: SortKey, dir: 'asc' | 'desc'): HoldingRow[] {
+  const factor = dir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => {
+    const av = a[key]
+    const bv = b[key]
+    if (av === null) return 1
+    if (bv === null) return -1
+    if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * factor
+    return ((av as number) - (bv as number)) * factor
+  })
 }
 
 type SeriesPoint = {
@@ -148,6 +190,18 @@ export default function PaperPortfolio() {
   const [showBenchmark, setShowBenchmark] = useState(true)
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const [sortKey, setSortKey] = useState<SortKey>('currentValue')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      // Names read best A-Z; money reads best largest-first.
+      setSortDir(key === 'ticker' ? 'asc' : 'desc')
+    }
+  }
 
   function toggleExpanded(id: number) {
     setExpandedIds((prev) => {
@@ -181,8 +235,17 @@ export default function PaperPortfolio() {
     data.series.length > 1 ? data.series[data.series.length - 1].portfolioValue - data.series[0].portfolioValue : 0
   const periodUp = periodDollarChange >= 0
 
+  // Built from the unsorted API order on purpose: buildExposure assigns colors by
+  // first-seen order, so feeding it the table's sorted copy would repaint the
+  // allocation bars every time a column header is clicked.
   const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
+
+  const rows: HoldingRow[] = data.holdings.map((h) => ({
+    ...h,
+    weightPct: data.totalValue > 0 ? (h.currentValue / data.totalValue) * 100 : 0,
+  }))
+  const sortedRows = sortRows(rows, sortKey, sortDir)
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
@@ -191,17 +254,13 @@ export default function PaperPortfolio() {
         decisions, tracked against the S&amp;P 500, with no real capital at risk.
       </p>
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
-      <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">
-        ${data.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </h1>
+      <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">{money(data.totalValue)}</h1>
       <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span className={`text-sm font-medium ${periodUp ? 'text-green-400' : 'text-red-400'}`}>
-          {periodUp ? '+' : '-'}$
-          {Math.abs(periodDollarChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <span className={`text-sm font-medium ${periodUp ? 'text-green-300' : 'text-red-300'}`}>
+          {signedMoney(periodDollarChange)}
         </span>
         <GainBadge value={periodReturnPct} size="md">
-          {periodReturnPct >= 0 ? '+' : ''}
-          {periodReturnPct.toFixed(2)}% · {period}
+          {signedPct(periodReturnPct)} · {period}
         </GainBadge>
       </div>
       <p className="text-xs text-gray-500 mb-8">Tracked for performance only — not real money.</p>
@@ -254,9 +313,7 @@ export default function PaperPortfolio() {
                         const point = entry?.payload as SeriesPoint | undefined
                         const pct = `${Number(value).toFixed(2)}%`
                         if (name === 'Portfolio') {
-                          const dollar = point
-                            ? `$${point.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            : ''
+                          const dollar = point ? money(point.portfolioValue) : ''
                           return [`${pct} (${dollar})`, name]
                         }
                         const spyPrice = point?.spyPrice
@@ -302,62 +359,121 @@ export default function PaperPortfolio() {
 
           <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
             <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
-            <div>
-              {data.holdings.map((h) => {
-                const expanded = expandedIds.has(h.id)
-                return (
-                  <div key={h.id} className="rounded-[var(--border-radius)] hover:bg-[var(--color-text)]/5 transition-colors">
-                    <div
-                      onClick={() => setSelectedTicker(h.ticker)}
-                      className="flex items-center justify-between px-5 py-4 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <div>
-                          <p className="font-semibold">{h.ticker}</p>
-                          <p className="text-xs text-gray-500">{h.shares} shares</p>
-                        </div>
-                        {h.thesis && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <caption className="sr-only">
+                  Paper portfolio holdings. Use the column headers to sort; select a row to open its price chart.
+                </caption>
+                <thead>
+                  <tr className="border-b border-[var(--color-text)]/10">
+                    {COLUMNS.map((col) => {
+                      const active = sortKey === col.key
+                      return (
+                        <th
+                          key={col.key}
+                          scope="col"
+                          aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                          className={`px-3 py-2 font-normal whitespace-nowrap ${col.numeric ? 'text-right' : 'text-left'}`}
+                        >
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleExpanded(h.id)
-                            }}
-                            aria-label={expanded ? `Hide investment thesis for ${h.ticker}` : `Show investment thesis for ${h.ticker}`}
-                            aria-expanded={expanded}
-                            className="text-gray-500 hover:text-[var(--color-text)] transition-colors p-1.5 rounded-full"
+                            type="button"
+                            onClick={() => toggleSort(col.key)}
+                            // gray-500 measured 4.19:1 against the card surface, under AA's 4.5
+                            // for text this size; gray-400 measures 7.79:1.
+                            className={`inline-flex items-center gap-1 text-xs uppercase tracking-wide transition-colors ${
+                              col.numeric ? 'flex-row-reverse' : ''
+                            } ${active ? 'text-[var(--color-text)]' : 'text-gray-400 hover:text-[var(--color-text)]'}`}
                           >
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
-                            >
-                              <path d="m6 9 6 6 6-6" />
-                            </svg>
+                            {col.label}
+                            <span aria-hidden className={active ? '' : 'opacity-0'}>
+                              {sortDir === 'asc' ? '▲' : '▼'}
+                            </span>
                           </button>
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRows.map((h) => {
+                    const expanded = expandedIds.has(h.id)
+                    return (
+                      <Fragment key={h.id}>
+                        <tr
+                          onClick={() => setSelectedTicker(h.ticker)}
+                          className="border-b border-[var(--color-text)]/5 cursor-pointer hover:bg-[var(--color-text)]/5 transition-colors"
+                        >
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-semibold">{h.ticker}</span>
+                              {h.thesis && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleExpanded(h.id)
+                                  }}
+                                  aria-label={
+                                    expanded
+                                      ? `Hide investment thesis for ${h.ticker}`
+                                      : `Show investment thesis for ${h.ticker}`
+                                  }
+                                  aria-expanded={expanded}
+                                  className="text-gray-500 hover:text-[var(--color-text)] transition-colors p-1 rounded-full"
+                                >
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                  >
+                                    <path d="m6 9 6 6 6-6" />
+                                  </svg>
+                                </button>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">
+                            {h.shares.toLocaleString()}
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">{money(h.entryPrice)}</td>
+                          <td className="px-3 py-3 text-right tabular-nums">{money(h.currentPrice)}</td>
+                          <td className="px-3 py-3 text-right tabular-nums font-medium">{money(h.currentValue)}</td>
+                          <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">
+                            {h.dayChangePct === null ? (
+                              <span className="text-gray-600">—</span>
+                            ) : (
+                              <span className={h.dayChangePct >= 0 ? 'text-green-300' : 'text-red-300'}>
+                                {signedPct(h.dayChangePct)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-right whitespace-nowrap">
+                            <GainBadge value={h.gainDollar}>
+                              {signedMoney(h.gainDollar)} ({signedPct(h.gainPct)})
+                            </GainBadge>
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">
+                            {h.weightPct.toFixed(1)}%
+                          </td>
+                        </tr>
+                        {expanded && h.thesis && (
+                          <tr className="border-b border-[var(--color-text)]/5">
+                            <td colSpan={COLUMNS.length} className="px-3 pb-3">
+                              <p className="text-sm text-gray-400 italic max-w-2xl">{h.thesis}</p>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium tabular-nums">
-                          ${h.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <GainBadge value={h.gainDollar}>
-                          {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
-                          {h.gainPct.toFixed(2)}%)
-                        </GainBadge>
-                      </div>
-                    </div>
-                    {expanded && h.thesis && (
-                      <p className="text-sm text-gray-400 italic px-5 pb-4 -mt-1 max-w-lg">{h.thesis}</p>
-                    )}
-                  </div>
-                )
-              })}
+                      </Fragment>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           </Card>
         </div>

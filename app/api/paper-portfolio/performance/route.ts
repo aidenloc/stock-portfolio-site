@@ -6,6 +6,9 @@ import { fetchSector } from '@/lib/sector'
 
 const BENCHMARK_TICKER = 'SPY'
 
+// UI periods that Yahoo serves at an intraday interval (5m/15m) rather than daily.
+const INTRADAY_PERIODS = ['1D', '1W']
+
 // UI period label -> Yahoo range bucket. "1W" maps to Yahoo's 5-trading-day
 // bucket since Yahoo has no native 1-calendar-week range.
 const PERIOD_MAP: Record<string, YahooPeriod> = {
@@ -35,6 +38,18 @@ function priceAtOrBefore(points: HistoryPoint[], targetTime: number): number | u
     result = p.price
   }
   return result
+}
+
+// Previous trading day's close. Deliberately keyed off the last two *dates*
+// rather than the last two points: the 1D/1W ranges come back at 5m/15m
+// intervals, so "the second-to-last point" there would be a five-minute-old
+// price, not yesterday's close. `points` must be sorted ascending by time.
+function previousDailyClose(points: HistoryPoint[]): number | undefined {
+  const lastCloseByDate = new Map<string, number>()
+  for (const p of points) lastCloseByDate.set(dateKey(p.time), p.price)
+  const dates = Array.from(lastCloseByDate.keys()).sort()
+  if (dates.length < 2) return undefined
+  return lastCloseByDate.get(dates[dates.length - 2])
 }
 
 export async function GET(request: Request) {
@@ -102,6 +117,26 @@ export async function GET(request: Request) {
     pointsByTicker.set(ticker, [...points].sort((a, b) => a.time - b.time))
   }
 
+  // Day change belongs to the holding, not to the selected chart window, so it
+  // must read the same on every period button. The 1D/1W ranges come back at
+  // 5m/15m intervals, where the prior date's last bar is a few minutes shy of
+  // the official close (worth ~0.05-0.25pp of drift against the other periods),
+  // and 1D spans a single date with no prior close in it at all. Both therefore
+  // take their baseline from one compact daily range instead.
+  let dayChangePoints = pointsByTicker
+  if (INTRADAY_PERIODS.includes(periodParam)) {
+    const dailyTickers = Array.from(new Set(typedHoldings.map((h) => h.ticker)))
+    const dailyResults = await Promise.allSettled(
+      dailyTickers.map(async (ticker) => [ticker, await fetchYahooHistory(ticker, '1M')] as [string, HistoryPoint[]])
+    )
+    dayChangePoints = new Map<string, HistoryPoint[]>()
+    for (const result of dailyResults) {
+      if (result.status !== 'fulfilled') continue
+      const [ticker, points] = result.value
+      dayChangePoints.set(ticker, [...points].sort((a, b) => a.time - b.time))
+    }
+  }
+
   const spyPoints = pointsByTicker.get(BENCHMARK_TICKER)
 
   // SPY trades every session, so its own timestamps make the fullest backbone for the window.
@@ -140,6 +175,14 @@ export async function GET(request: Request) {
     const currentPrice = points && points.length ? points[points.length - 1].price : h.entry_price
     const currentValue = h.shares * currentPrice
     const costBasis = h.shares * h.entry_price
+
+    // Measured against the same currentPrice shown in the table, so the day
+    // change always reconciles with the price column instead of being derived
+    // from a separate "latest" that could be a few minutes out of step.
+    const prevClose = previousDailyClose(dayChangePoints.get(h.ticker) ?? [])
+    const dayChangeDollar = prevClose ? (currentPrice - prevClose) * h.shares : null
+    const dayChangePct = prevClose ? ((currentPrice - prevClose) / prevClose) * 100 : null
+
     return {
       id: h.id,
       ticker: h.ticker,
@@ -150,6 +193,8 @@ export async function GET(request: Request) {
       thesis: h.thesis,
       currentPrice,
       currentValue,
+      dayChangeDollar,
+      dayChangePct,
       gainDollar: currentValue - costBasis,
       gainPct: costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0,
     }
