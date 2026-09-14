@@ -142,33 +142,61 @@ export async function GET(request: Request) {
   // SPY trades every session, so its own timestamps make the fullest backbone for the window.
   const axisTimes = spyPoints?.map((p) => p.time) ?? []
 
-  const rawSeries = axisTimes.map((t) => {
+  const rawSeries = axisTimes.map((t, i) => {
+    const dateNow = dateKey(t)
+    const datePrev = i > 0 ? dateKey(axisTimes[i - 1]) : null
     let value = 0
+    let contribution = 0
     for (const h of typedHoldings) {
-      if (h.entry_date > dateKey(t)) continue
+      if (h.entry_date > dateNow) continue
       const points = pointsByTicker.get(h.ticker)
       const price = (points ? priceAtOrBefore(points, t) : undefined) ?? h.entry_price
       value += h.shares * price
+      // Opened since the previous axis point, so the cash that bought it lands in
+      // `value` for the first time here. That is deposited capital, not a gain.
+      if (datePrev !== null && h.entry_date > datePrev) {
+        contribution += h.shares * h.entry_price
+      }
     }
     const spyPrice = spyPoints ? priceAtOrBefore(spyPoints, t) : undefined
-    return { time: t, value, spyPrice }
+    return { time: t, value, contribution, spyPrice }
   })
 
-  // Trim leading points where nothing was held yet, then rebase returns to 0% at
-  // the window's first point (so each period button shows performance *during
-  // that window*, not the since-inception curve zoomed in).
+  // Trim leading points where nothing was held yet, then anchor at 0% on the
+  // window's first point, so each period button shows performance *during that
+  // window* rather than the since-inception curve zoomed in.
   const firstActiveIndex = rawSeries.findIndex((pt) => pt.value > 0)
   const activeSeries = firstActiveIndex === -1 ? [] : rawSeries.slice(firstActiveIndex)
-  const baseValue = activeSeries[0]?.value
   const baseSpy = activeSeries[0]?.spyPrice
 
-  const series = activeSeries.map((pt) => ({
-    time: pt.time,
-    portfolioValue: pt.value,
-    spyPrice: pt.spyPrice ?? null,
-    portfolioReturnPct: baseValue ? ((pt.value - baseValue) / baseValue) * 100 : 0,
-    spyReturnPct: baseSpy && pt.spyPrice ? ((pt.spyPrice - baseSpy) / baseSpy) * 100 : null,
-  }))
+  // Time-weighted return. The naive (value - startValue) / startValue counts
+  // every position opened mid-window as profit: on a 1Y window this portfolio
+  // started at $975 (VOR only) and ended at $16.5k, reading as +1,596% when the
+  // real return on cost was +46%. Each step therefore backs out that step's
+  // contribution before measuring growth, and the steps are chain-linked --
+  // the same method a fund fact sheet uses, and the only way this line is
+  // honestly comparable to the SPY line drawn beside it.
+  let growth = 1
+  let gainDollar = 0
+
+  const series = activeSeries.map((pt, i) => {
+    if (i > 0) {
+      const prev = activeSeries[i - 1]
+      if (prev.value > 0) {
+        const stepGain = pt.value - pt.contribution - prev.value
+        growth *= 1 + stepGain / prev.value
+        gainDollar += stepGain
+      }
+    }
+    return {
+      time: pt.time,
+      portfolioValue: pt.value,
+      portfolioGainDollar: gainDollar,
+      spyPrice: pt.spyPrice ?? null,
+      portfolioReturnPct: (growth - 1) * 100,
+      spyReturnPct: baseSpy && pt.spyPrice ? ((pt.spyPrice - baseSpy) / baseSpy) * 100 : null,
+    }
+  })
 
   const holdingsBreakdown = typedHoldings.map((h) => {
     const points = pointsByTicker.get(h.ticker)

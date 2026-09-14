@@ -11,6 +11,7 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  ReferenceDot,
 } from 'recharts'
 import StockChart from './StockChart'
 import DailyBriefing from './DailyBriefing'
@@ -20,6 +21,17 @@ import Card from './Card'
 const PERIODS = ['1D', '1W', '1M', '6M', 'YTD', '1Y'] as const
 type Period = (typeof PERIODS)[number]
 const INTRADAY_PERIODS: Period[] = ['1D', '1W']
+
+// Spoken forms, for button labels and the chart's text equivalent -- "1M" reads
+// as "one em" to a screen reader.
+const PERIOD_LABELS: Record<Period, string> = {
+  '1D': 'past day',
+  '1W': 'past week',
+  '1M': 'past month',
+  '6M': 'past six months',
+  YTD: 'year to date',
+  '1Y': 'past year',
+}
 
 // Validated categorical palette (dark-surface steps) from the site's dataviz
 // guidelines — fixed hue order, assigned by entity identity, never by sort rank.
@@ -95,6 +107,7 @@ function sortRows(rows: HoldingRow[], key: SortKey, dir: 'asc' | 'desc'): Holdin
 type SeriesPoint = {
   time: number
   portfolioValue: number
+  portfolioGainDollar: number
   spyPrice: number | null
   portfolioReturnPct: number
   spyReturnPct: number | null
@@ -175,12 +188,121 @@ function ExposureBar({ title, slices }: { title: string; slices: ExposureSlice[]
   )
 }
 
+const dayKey = (unixSeconds: number) => new Date(unixSeconds * 1000).toISOString().slice(0, 10)
+
+type EntryMarker = { time: number; y: number; tickers: string[]; label: string; labelPosition: 'top' | 'bottom' }
+
+// Markers for positions *opened* inside the visible window. The schema records a
+// single entry_date/entry_price per holding and has no sell or add-to-position
+// records, so these are honestly entries only -- not a full trade history.
+// Entries before the window start simply don't appear.
+function buildEntryMarkers(holdings: Holding[], series: SeriesPoint[]): EntryMarker[] {
+  if (series.length === 0) return []
+  const windowStart = dayKey(series[0].time)
+  const byTime = new Map<number, EntryMarker>()
+
+  for (const h of holdings) {
+    if (h.entryDate < windowStart) continue
+    const point = series.find((pt) => dayKey(pt.time) >= h.entryDate)
+    if (!point) continue
+    const existing = byTime.get(point.time)
+    if (existing) {
+      existing.tickers.push(h.ticker)
+    } else {
+      byTime.set(point.time, {
+        time: point.time,
+        y: point.portfolioReturnPct,
+        tickers: [h.ticker],
+        label: new Date(point.time * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        labelPosition: 'top',
+      })
+    }
+  }
+
+  const markers = Array.from(byTime.values()).sort((a, b) => a.time - b.time)
+
+  // Two positions opened days apart collide at the top of the plot on a long
+  // window (MTSI and WOLF are six days apart), so alternate the label side when
+  // neighbours fall within 4% of the window's span.
+  const span = series[series.length - 1].time - series[0].time
+  const minGap = span * 0.04
+  for (let i = 1; i < markers.length; i++) {
+    if (markers[i].time - markers[i - 1].time < minGap) {
+      markers[i].labelPosition = markers[i - 1].labelPosition === 'top' ? 'bottom' : 'top'
+    }
+  }
+  return markers
+}
+
 function formatLabel(timestamp: number, period: Period): string {
   const date = new Date(timestamp * 1000)
   if (INTRADAY_PERIODS.includes(period)) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
+function SkeletonBlock({ className = '' }: { className?: string }) {
+  return <div className={`bg-[var(--color-text)]/10 rounded-[var(--border-radius)] ${className}`} />
+}
+
+// Mirrors the real layout's shape so the page doesn't jump when data lands.
+function PortfolioSkeleton() {
+  return (
+    <>
+      <p className="sr-only" role="status">
+        Loading portfolio data
+      </p>
+      <section className="mb-[calc(var(--spacing-unit)*3rem)] animate-pulse" aria-hidden="true">
+        <div className="max-w-xl mb-5 space-y-2">
+          <SkeletonBlock className="h-3 w-full" />
+          <SkeletonBlock className="h-3 w-2/3" />
+        </div>
+        <SkeletonBlock className="h-3 w-28 mb-3" />
+        <SkeletonBlock className="h-14 w-72 mb-3" />
+        <SkeletonBlock className="h-4 w-56 mb-8" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+          <div>
+            <Card className="mb-6">
+              <SkeletonBlock className="h-8 w-72 mb-4" />
+              <SkeletonBlock className="h-96 w-full" />
+            </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
+              {[0, 1].map((i) => (
+                <Card key={i}>
+                  <SkeletonBlock className="h-3 w-44 mb-3" />
+                  <SkeletonBlock className="h-7 w-full mb-3" />
+                  <SkeletonBlock className="h-3 w-3/4" />
+                </Card>
+              ))}
+            </div>
+            <Card>
+              <SkeletonBlock className="h-3 w-20 mb-4" />
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <SkeletonBlock className="h-4 w-16" />
+                  <SkeletonBlock className="h-4 w-24" />
+                  <SkeletonBlock className="h-4 w-20" />
+                  <SkeletonBlock className="h-4 w-28" />
+                </div>
+              ))}
+            </Card>
+          </div>
+          <div className="space-y-6">
+            {[0, 1].map((i) => (
+              <Card key={i}>
+                <SkeletonBlock className="h-3 w-32 mb-4" />
+                <SkeletonBlock className="h-4 w-full mb-2" />
+                <SkeletonBlock className="h-4 w-5/6 mb-2" />
+                <SkeletonBlock className="h-4 w-2/3" />
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  )
 }
 
 export default function PaperPortfolio() {
@@ -227,12 +349,18 @@ export default function PaperPortfolio() {
     fetchPerformance()
   }, [fetchPerformance])
 
-  if (!data && loading) return null
+  if (!data && loading) return <PortfolioSkeleton />
   if (!data || !data.holdings || data.holdings.length === 0) return null
 
+  // A period switch refetches while the previous period's data is still on
+  // screen. Dimming it beats swapping in a "Loading..." block, which collapsed
+  // the chart's height and made the whole page jump on every period click.
+  const refreshing = loading
+
   const periodReturnPct = data.series.length ? data.series[data.series.length - 1].portfolioReturnPct : 0
-  const periodDollarChange =
-    data.series.length > 1 ? data.series[data.series.length - 1].portfolioValue - data.series[0].portfolioValue : 0
+  // Not (endValue - startValue): that counts capital deposited mid-window as
+  // profit, the same flaw the time-weighted return fixes on the API side.
+  const periodDollarChange = data.series.length ? data.series[data.series.length - 1].portfolioGainDollar : 0
   const periodUp = periodDollarChange >= 0
 
   // Built from the unsorted API order on purpose: buildExposure assigns colors by
@@ -240,6 +368,10 @@ export default function PaperPortfolio() {
   // allocation bars every time a column header is clicked.
   const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
+
+  const lastPoint = data.series.length ? data.series[data.series.length - 1] : null
+  const benchmarkReturnPct = lastPoint ? lastPoint.spyReturnPct : null
+  const entryMarkers = buildEntryMarkers(data.holdings, data.series)
 
   const rows: HoldingRow[] = data.holdings.map((h) => ({
     ...h,
@@ -269,12 +401,17 @@ export default function PaperPortfolio() {
         <div>
           <Card className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="inline-flex bg-[var(--color-bg)] rounded-full p-1 gap-1">
+              {/* Selected state was conveyed by colour alone; aria-pressed makes it
+                  available to a screen reader too. */}
+              <div className="inline-flex bg-[var(--color-bg)] rounded-full p-1 gap-1" role="group" aria-label="Chart time range">
                 {PERIODS.map((p) => (
                   <button
                     key={p}
+                    type="button"
                     onClick={() => setPeriod(p)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    aria-pressed={period === p}
+                    aria-label={`Show ${PERIOD_LABELS[p]}`}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
                       period === p ? 'bg-[var(--color-primary)] text-white' : 'text-gray-400 hover:text-[var(--color-text)]'
                     }`}
                   >
@@ -283,19 +420,37 @@ export default function PaperPortfolio() {
                 ))}
               </div>
               <button
+                type="button"
                 onClick={() => setShowBenchmark((v) => !v)}
-                className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors ${
-                  showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-500'
+                aria-pressed={showBenchmark}
+                aria-label="Overlay the S&P 500 benchmark"
+                className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                  showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-400'
                 }`}
               >
                 S&amp;P 500
               </button>
             </div>
 
-            <div className="h-96">
-              {loading ? (
-                <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
-              ) : (
+            {/* An SVG chart is opaque to a screen reader no matter how it's
+                labelled, so the figure carries a text equivalent of the same
+                numbers rather than just a role="img" name. */}
+            <p className="sr-only">
+              {`Line chart of portfolio return versus the S&P 500 over the ${PERIOD_LABELS[period]}. ` +
+                `Portfolio ${signedPct(periodReturnPct)}` +
+                (benchmarkReturnPct === null ? '.' : `, S&P 500 ${signedPct(benchmarkReturnPct)}.`) +
+                (entryMarkers.length > 0
+                  ? ` Positions opened during this window: ${entryMarkers.map((m) => `${m.tickers.join(' and ')} on ${m.label}`).join('; ')}.`
+                  : '')}
+            </p>
+
+            <div
+              className={`h-96 transition-opacity ${refreshing ? 'opacity-40' : 'opacity-100'}`}
+              aria-busy={refreshing}
+              role="img"
+              aria-label={`Portfolio return ${signedPct(periodReturnPct)} over the ${PERIOD_LABELS[period]}`}
+            >
+              {(
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={data.series}>
                     <defs>
@@ -342,10 +497,36 @@ export default function PaperPortfolio() {
                         strokeDasharray="4 4"
                       />
                     )}
+                    {entryMarkers.map((m) => (
+                      <ReferenceDot
+                        key={m.time}
+                        x={m.time}
+                        y={m.y}
+                        r={5}
+                        fill="var(--color-primary)"
+                        stroke="var(--color-bg)"
+                        strokeWidth={2}
+                        label={{
+                          value: m.tickers.join(' / '),
+                          position: m.labelPosition,
+                          fill: '#9ca3af',
+                          fontSize: 11,
+                        }}
+                      />
+                    ))}
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
             </div>
+            {entryMarkers.length > 0 && (
+              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary)] ring-2 ring-[var(--color-bg)]"
+                />
+                Position opened
+              </p>
+            )}
           </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">

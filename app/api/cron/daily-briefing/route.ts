@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { fetchCompanyName } from '@/lib/sector'
 
-const DAYS_LOOKBACK = 3
-const HEADLINES_PER_TICKER = 4
+// Measured against this portfolio's actual holdings: a 3-day window returned 1
+// raw article across all five tickers (0 surviving the relevance filter), 7 days
+// returned 16 (9 kept), 14 days returned 34 (23 kept). Small caps simply don't
+// generate daily coverage -- the briefing looked broken because the window was
+// too narrow, not because the filter was too strict (it keeps ~68% at 14 days).
+const DAYS_LOOKBACK = 14
+const HEADLINES_PER_TICKER = 3
 const SECTOR_STOPWORDS = new Set(['services', 'and', 'of', 'the', 'technology', 'solutions', 'industries'])
 
 type NewsItem = {
