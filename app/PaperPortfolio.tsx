@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Legend,
   ReferenceDot,
+  ReferenceLine,
 } from 'recharts'
 import StockChart from './StockChart'
 import DailyBriefing from './DailyBriefing'
@@ -190,6 +191,54 @@ function ExposureBar({ title, slices }: { title: string; slices: ExposureSlice[]
 
 const dayKey = (unixSeconds: number) => new Date(unixSeconds * 1000).toISOString().slice(0, 10)
 
+// Recharts types activeTooltipIndex as number | string | undefined depending on
+// chart kind, so normalise it to a usable array index or null.
+function activeIndexOf(state: { activeTooltipIndex?: unknown } | undefined): number | null {
+  const raw = state?.activeTooltipIndex
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isInteger(n) && n >= 0 ? n : null
+}
+
+type RangeStats = {
+  lo: number
+  hi: number
+  startTime: number
+  endTime: number
+  gainDollar: number
+  pct: number
+  spyPct: number | null
+}
+
+// Change between two points of the series. Deliberately *not*
+// (endValue - startValue): portfolioValue includes deposited capital, so a range
+// spanning a newly opened position would count the cash that bought it as profit
+// — the same flaw the time-weighted return fixes for the headline figure.
+// portfolioGainDollar is already contribution-free, and the two cumulative TWR
+// figures are chain-linked rather than subtracted.
+function computeRangeStats(series: SeriesPoint[], start: number, end: number): RangeStats | null {
+  const lo = Math.min(start, end)
+  const hi = Math.max(start, end)
+  if (lo === hi) return null
+
+  const a = series[lo]
+  const b = series[hi]
+  if (!a || !b) return null
+
+  const base = 1 + a.portfolioReturnPct / 100
+  const pct = base > 0 ? ((1 + b.portfolioReturnPct / 100) / base - 1) * 100 : 0
+  const spyPct = a.spyPrice && b.spyPrice ? (b.spyPrice / a.spyPrice - 1) * 100 : null
+
+  return {
+    lo,
+    hi,
+    startTime: a.time,
+    endTime: b.time,
+    gainDollar: b.portfolioGainDollar - a.portfolioGainDollar,
+    pct,
+    spyPct,
+  }
+}
+
 type EntryMarker = { time: number; y: number; tickers: string[]; label: string; labelPosition: 'top' | 'bottom' }
 
 // Markers for positions *opened* inside the visible window. The schema records a
@@ -349,6 +398,22 @@ export default function PaperPortfolio() {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [sortKey, setSortKey] = useState<SortKey>('currentValue')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [selection, setSelection] = useState<{ start: number; end: number } | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  function beginDrag(state: { activeTooltipIndex?: unknown } | undefined) {
+    const i = activeIndexOf(state)
+    if (i === null) return
+    setIsDragging(true)
+    setSelection({ start: i, end: i })
+  }
+
+  function extendDrag(state: { activeTooltipIndex?: unknown } | undefined) {
+    if (!isDragging) return
+    const i = activeIndexOf(state)
+    if (i === null) return
+    setSelection((prev) => (prev && prev.end !== i ? { ...prev, end: i } : prev))
+  }
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -369,8 +434,32 @@ export default function PaperPortfolio() {
     })
   }
 
+  // The drag ends wherever the pointer is released, which is often outside the
+  // chart (or outside the window entirely) — listening on the chart alone would
+  // leave it stuck in dragging state.
+  useEffect(() => {
+    if (!isDragging) return
+    const endDrag = () => {
+      setIsDragging(false)
+      // A press with no drag is a click, which dismisses any pinned selection.
+      setSelection((prev) => (prev && prev.start === prev.end ? null : prev))
+    }
+    window.addEventListener('mouseup', endDrag)
+    window.addEventListener('touchend', endDrag)
+    window.addEventListener('touchcancel', endDrag)
+    return () => {
+      window.removeEventListener('mouseup', endDrag)
+      window.removeEventListener('touchend', endDrag)
+      window.removeEventListener('touchcancel', endDrag)
+    }
+  }, [isDragging])
+
   const fetchPerformance = useCallback(async () => {
     setLoading(true)
+    // Indices point into the previous period's series, so they're meaningless
+    // once a different window loads.
+    setSelection(null)
+    setIsDragging(false)
     try {
       const res = await fetch(`/api/paper-portfolio/performance?period=${period}`)
       const d = await res.json()
@@ -403,6 +492,9 @@ export default function PaperPortfolio() {
   // allocation bars every time a column header is clicked.
   const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
+
+  const rangeStats = selection ? computeRangeStats(data.series, selection.start, selection.end) : null
+  const selectionAnchor = selection ? data.series[selection.start] : null
 
   const lastPoint = data.series.length ? data.series[data.series.length - 1] : null
   const benchmarkReturnPct = lastPoint ? lastPoint.spyReturnPct : null
@@ -483,16 +575,69 @@ export default function PaperPortfolio() {
                   ? ` Positions opened during this window: ${entryMarkers.map((m) => `${m.tickers.join(' and ')} on ${m.label}`).join('; ')}.`
                   : '')}
             </p>
+            <p className="sr-only" role="status">
+              {rangeStats
+                ? `Range selected, ${formatLabel(rangeStats.startTime, period)} to ${formatLabel(rangeStats.endTime, period)}: portfolio ${signedMoney(rangeStats.gainDollar)}, ${signedPct(rangeStats.pct)}` +
+                  (rangeStats.spyPct === null ? '.' : `; S&P 500 ${signedPct(rangeStats.spyPct)}.`)
+                : ''}
+            </p>
 
             <div
-              className={`h-96 transition-opacity ${refreshing ? 'opacity-40' : 'opacity-100'}`}
+              className={`relative h-96 select-none transition-opacity ${refreshing ? 'opacity-40' : 'opacity-100'}`}
+              // pan-y keeps vertical page scrolling working on a phone while
+              // letting a horizontal drag reach the chart instead of the browser.
+              style={{ touchAction: 'pan-y' }}
               aria-busy={refreshing}
               role="img"
-              aria-label={`Portfolio return ${signedPct(periodReturnPct)} over the ${PERIOD_LABELS[period]}`}
+              aria-label={`Portfolio return ${signedPct(periodReturnPct)} over the ${PERIOD_LABELS[period]}. Click and drag across the chart to compare two dates.`}
             >
+              {rangeStats && (
+                // max-w keeps it inside the plot on a phone: at 270px wide the
+                // nowrap version ran off the right edge of the chart.
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 top-0 z-10 pointer-events-none
+                             max-w-[calc(100%-1rem)]
+                             bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-text)]/15
+                             rounded-[var(--border-radius)] px-3 py-2 text-xs shadow-lg"
+                >
+                  <p className="text-gray-400 mb-1">
+                    {formatLabel(rangeStats.startTime, period)} – {formatLabel(rangeStats.endTime, period)}
+                  </p>
+                  <p className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-gray-400">Portfolio</span>
+                    <span
+                      className={`font-medium tabular-nums ${
+                        rangeStats.gainDollar >= 0 ? 'text-green-300' : 'text-red-300'
+                      }`}
+                    >
+                      {signedMoney(rangeStats.gainDollar)}
+                    </span>
+                    <span className={`tabular-nums ${rangeStats.pct >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                      {signedPct(rangeStats.pct)}
+                    </span>
+                  </p>
+                  {rangeStats.spyPct !== null && (
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-gray-400">S&amp;P 500</span>
+                      <span
+                        className={`tabular-nums ${rangeStats.spyPct >= 0 ? 'text-green-300' : 'text-red-300'}`}
+                      >
+                        {signedPct(rangeStats.spyPct)}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
               {(
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data.series}>
+                  <ComposedChart
+                    data={data.series}
+                    style={{ cursor: 'crosshair' }}
+                    onMouseDown={beginDrag}
+                    onMouseMove={extendDrag}
+                    onTouchStart={beginDrag}
+                    onTouchMove={extendDrag}
+                  >
                     <defs>
                       <linearGradient id="portfolioGlow" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0.3 }} />
@@ -515,6 +660,14 @@ export default function PaperPortfolio() {
                         return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
                       }}
                       contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+                      // Kept mounted while dragging (Recharts derives activeTooltipIndex
+                      // from the same machinery) but hidden, so the hover tooltip and the
+                      // range label don't stack on top of each other.
+                      // maxWidth matters on a phone: the default tooltip is wider than the
+                      // ~270px plot there, so Recharts can't clamp it inside the view box and
+                      // it pushed the page 4px wider than the viewport after a touch.
+                      wrapperStyle={{ maxWidth: 200, ...(isDragging ? { display: 'none' } : {}) }}
+                      allowEscapeViewBox={{ x: false, y: false }}
                     />
                     <Legend />
                     {/* type="linear", not "monotone": a monotone spline is a cubic
@@ -541,6 +694,46 @@ export default function PaperPortfolio() {
                         dot={false}
                         strokeWidth={2}
                         strokeDasharray="4 4"
+                      />
+                    )}
+
+                    {/* Range selection. The anchor renders as soon as the pointer
+                        goes down, before any drag distance, so the press has
+                        immediate feedback. */}
+                    {selectionAnchor && (
+                      <ReferenceLine
+                        x={selectionAnchor.time}
+                        stroke="var(--color-text)"
+                        strokeOpacity={0.45}
+                        strokeDasharray="3 3"
+                      />
+                    )}
+                    {selectionAnchor && (
+                      <ReferenceDot
+                        x={selectionAnchor.time}
+                        y={selectionAnchor.portfolioReturnPct}
+                        r={4}
+                        fill="var(--color-text)"
+                        stroke="var(--color-bg)"
+                        strokeWidth={2}
+                      />
+                    )}
+                    {rangeStats && (
+                      <ReferenceLine
+                        x={data.series[selection!.end].time}
+                        stroke="var(--color-text)"
+                        strokeOpacity={0.45}
+                        strokeDasharray="3 3"
+                      />
+                    )}
+                    {rangeStats && (
+                      <ReferenceDot
+                        x={data.series[selection!.end].time}
+                        y={data.series[selection!.end].portfolioReturnPct}
+                        r={4}
+                        fill="var(--color-text)"
+                        stroke="var(--color-bg)"
+                        strokeWidth={2}
                       />
                     )}
                     {entryMarkers.map((m) => (
