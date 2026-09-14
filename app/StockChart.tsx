@@ -96,7 +96,10 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
                   formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Price']}
                   contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
                 />
-                <Line type="monotone" dataKey="price" stroke={isUp ? '#22c55e' : '#ef4444'} dot={false} strokeWidth={2} />
+                {/* linear, not monotone -- same reasoning as the performance
+                    chart: a spline between two closes can draw a price that
+                    never traded. */}
+                <Line type="linear" dataKey="price" stroke={isUp ? '#22c55e' : '#ef4444'} dot={false} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           )}

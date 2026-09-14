@@ -517,8 +517,14 @@ export default function PaperPortfolio() {
                       contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
                     />
                     <Legend />
+                    {/* type="linear", not "monotone": a monotone spline is a cubic
+                        curve fitted through the closes, so between two points it
+                        can bow above or below both of them and draw a price the
+                        portfolio never traded at. Straight segments plot only
+                        values that actually occurred, which is what Google
+                        Finance and other real price charts do. */}
                     <Area
-                      type="monotone"
+                      type="linear"
                       dataKey="portfolioReturnPct"
                       name="Portfolio"
                       stroke="var(--color-primary)"
@@ -528,7 +534,7 @@ export default function PaperPortfolio() {
                     />
                     {showBenchmark && (
                       <Line
-                        type="monotone"
+                        type="linear"
                         dataKey="spyReturnPct"
                         name="S&P 500 (SPY)"
                         stroke="#888"
