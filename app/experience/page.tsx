@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import Header from '../Header'
 import Footer from '../Footer'
+import ContactLinks from '../ContactLinks'
+import { ArrowIcon } from '../icons'
+import { allEntriesByMostRecent, KIND_LABEL, type ExperienceEntry } from '@/lib/experience'
 
 const DESCRIPTION =
   'Aiden Loc — education, work experience, certifications, and technical skills. Business Administration at University at Buffalo.'
@@ -32,70 +35,39 @@ function SectionHeading({ number, title }: { number: string; title: string }) {
   )
 }
 
-function Entry({
-  org,
-  location,
-  role,
-  dates,
-  bullets,
-}: {
-  org: string
-  location: string
-  role: string
-  dates: string
-  bullets: string[]
-}) {
+// One node on the unified timeline. The connecting line is drawn per-entry and
+// omitted on the last one, so the thread ends at the final dot instead of
+// trailing off past it.
+function TimelineEntry({ entry, isLast }: { entry: ExperienceEntry; isLast: boolean }) {
   return (
-    <div className="mb-8 last:mb-0">
+    <li className="relative pl-8 pb-10 last:pb-0">
+      {!isLast && (
+        <span aria-hidden className="absolute left-[5px] top-4 bottom-0 w-px bg-[var(--color-text)]/15" />
+      )}
+      <span
+        aria-hidden
+        className="absolute left-0 top-[5px] w-[11px] h-[11px] rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg)]"
+      />
+
       <div className="flex justify-between items-baseline gap-4">
-        <h3 className="font-semibold">{org}</h3>
-        <span className="text-xs text-gray-500 whitespace-nowrap">{location}</span>
+        <h3 className="font-semibold">{entry.org}</h3>
+        <span className="text-xs text-gray-500 whitespace-nowrap">{entry.location}</span>
       </div>
       <div className="flex justify-between items-baseline gap-4 mb-2">
-        <p className="text-sm italic text-gray-400">{role}</p>
-        <span className="text-xs text-gray-500 whitespace-nowrap">{dates}</span>
+        <p className="text-sm italic text-gray-400">
+          {entry.role}
+          <span className="not-italic text-[10px] uppercase tracking-widest text-gray-600 ml-2">
+            {KIND_LABEL[entry.kind]}
+          </span>
+        </p>
+        <span className="text-xs text-gray-500 whitespace-nowrap">{entry.dates}</span>
       </div>
       <ul className="list-disc list-outside ml-4 space-y-1.5 text-sm text-gray-400">
-        {bullets.map((b, i) => (
+        {entry.bullets.map((b, i) => (
           <li key={i}>{b}</li>
         ))}
       </ul>
-    </div>
-  )
-}
-
-function FileIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-    </svg>
-  )
-}
-
-function LinkedInIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56z" />
-    </svg>
-  )
-}
-
-function MailIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="m22 6-10 7L2 6" />
-    </svg>
-  )
-}
-
-function ArrowIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
+    </li>
   )
 }
 
@@ -152,73 +124,21 @@ export default function ExperiencePage() {
 
       <div className="max-w-3xl mb-16">
         <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
-        <div className="flex flex-wrap gap-6 text-sm">
-          <a
-            href="/resume.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
-          >
-            <FileIcon />
-            Resume
-          </a>
-          <a
-            href="https://linkedin.com/in/aiden-loc"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
-          >
-            <LinkedInIcon />
-            LinkedIn
-          </a>
-          <a
-            href="mailto:aiden.s.loc@gmail.com"
-            className="flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
-          >
-            <MailIcon />
-            Contact
-          </a>
-        </div>
+        <ContactLinks />
       </div>
 
       <div className="max-w-3xl">
-        <SectionHeading number="01" title="Education" />
-        <Entry
-          org="University at Buffalo"
-          location="Buffalo, NY"
-          role="Bachelor of Science in Business Administration"
-          dates="Expected May 2030"
-          bullets={[
-            'Awards: First Prize Winner, Chinese American Citizens Alliance Greater New York Essay Competition (2025)',
-            'Relevant Courses/Exams: CLEP Analyzing and Interpreting Literature, CLEP Calculus, CLEP Financial Accounting',
-          ]}
-        />
+        {/* Education, work and extracurriculars share one chronological thread
+            rather than three separately-labelled stacks; each entry keeps a small
+            kind label so the distinction isn't lost in the merge. */}
+        <SectionHeading number="01" title="Timeline" />
+        <ol className="mb-8">
+          {allEntriesByMostRecent().map((e, i, arr) => (
+            <TimelineEntry key={e.org} entry={e} isLast={i === arr.length - 1} />
+          ))}
+        </ol>
 
-        <SectionHeading number="02" title="Experience" />
-        <Entry
-          org="Osmanthus LLC"
-          location="Brooklyn, NY"
-          role="Real Estate Researcher"
-          dates="2024 – Present"
-          bullets={[
-            "Sourced and evaluated prospective real estate acquisitions, ensuring all target properties strictly met the firm's required rent-to-debt payment ratios",
-            'Analyzed regional property value trends and historical data to identify high-growth markets and forecast long-term asset appreciation',
-            'Conducted environmental risk assessments by vetting property zoning and geographic data to systematically eliminate flood-zone liabilities from the investment pipeline',
-          ]}
-        />
-        <Entry
-          org="Wharton Global Youth Investment Competition"
-          location="Manhattan, NY"
-          role="Team Lead"
-          dates="Sept. 2025 – Apr. 2026"
-          bullets={[
-            'Led a team of 6 to design and execute a comprehensive investment strategy focused on special situations investing',
-            'Allocated and managed a $500,000 simulated portfolio, analyzing market data to optimize asset distribution and manage risk',
-            "Authored detailed investment reports outlining the team's financial thesis, valuation models, and long-term strategic outlook",
-          ]}
-        />
-
-        <SectionHeading number="03" title="Certifications" />
+        <SectionHeading number="02" title="Certifications" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           <CertificationCard
             icon={<IBMMark />}
@@ -240,31 +160,7 @@ export default function ExperiencePage() {
           />
         </div>
 
-        <SectionHeading number="04" title="Extracurricular Experience" />
-        <Entry
-          org="CIEE International Studies Tokyo"
-          location="Tokyo, Japan"
-          role="Robotics"
-          dates="July – August 2025"
-          bullets={[
-            'Engineered an autonomous robotic vehicle capable of line-following and real-time maze navigation',
-            "Integrated ultrasonic sensors and color detectors to optimize the robot's environmental awareness and obstacle avoidance",
-            'Developed foundational skills in hardware integration and algorithmic problem-solving within an international study environment',
-          ]}
-        />
-        <Entry
-          org="EZ Esports High Schools League"
-          location="Brooklyn, NY"
-          role="Team Captain"
-          dates="Oct. 2024 – Apr. 2026"
-          bullets={[
-            'Led and managed an 8-player competitive roster, coordinating practice schedules, strategic reviews, and team dynamics to foster a collaborative culture',
-            'Developed high-pressure communication skills by delivering real-time tactical calls and keeping the team focused during high-stakes, fast-paced tournament environments',
-            'Spearheaded a year-over-year performance turnaround, driving the team from a 7th-place finish at the 2025 NYC LAN Tournament to a 2nd-place podium finish at the 2026 tournament',
-          ]}
-        />
-
-        <SectionHeading number="05" title="Technical Skills" />
+        <SectionHeading number="03" title="Technical Skills" />
         <div className="text-sm text-gray-400 space-y-2 mb-8">
           <p>
             <span className="text-[var(--color-text)] font-medium">Languages:</span> English

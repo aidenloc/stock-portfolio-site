@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Header from '../Header'
 import Footer from '../Footer'
 import Card from '../Card'
+import { ArrowIcon } from '../icons'
+import { PROJECTS } from '@/lib/projects'
 
 const DESCRIPTION =
   'Engineering and research write-ups — including a full case study on building this portfolio tracker with Next.js, Supabase, and Vercel.'
@@ -17,15 +19,6 @@ export const metadata: Metadata = {
     url: '/projects',
     images: ['/opengraph-image'],
   },
-}
-
-function ArrowIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  )
 }
 
 function Tag({ children }: { children: React.ReactNode }) {
@@ -46,13 +39,14 @@ export default function ProjectsPage() {
         <h1 className="text-4xl font-bold mb-8">Research &amp; Modeling</h1>
 
         <Card>
-          <p className="text-xs text-gray-600 mb-2">Project 1</p>
-          <h2 className="text-2xl font-bold mb-3">Building a Full-Stack Portfolio Tracker</h2>
+          {/* Title/tags come from lib/projects so the home page's preview card
+              can reference this project without restating it. */}
+          <p className="text-xs text-gray-600 mb-2">{PROJECTS[0].number}</p>
+          <h2 className="text-2xl font-bold mb-3">{PROJECTS[0].title}</h2>
           <div className="flex flex-wrap gap-2 mb-6">
-            <Tag>Next.js</Tag>
-            <Tag>Supabase</Tag>
-            <Tag>Vercel</Tag>
-            <Tag>TypeScript</Tag>
+            {PROJECTS[0].tags.map((tag) => (
+              <Tag key={tag}>{tag}</Tag>
+            ))}
           </div>
 
           <div className="space-y-6 text-sm text-gray-400 leading-relaxed">
