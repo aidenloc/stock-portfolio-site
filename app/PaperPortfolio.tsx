@@ -546,8 +546,7 @@ export default function PaperPortfolio() {
 
   // Built from the unsorted API order on purpose: buildExposure assigns colors by
   // first-seen order, so feeding it the table's sorted copy would repaint the
-  // allocation bars every time a column header is clicked.
-  const exposureByHolding = buildExposure(data.holdings, (h) => h.ticker)
+  // allocation bar every time a column header is clicked.
   const exposureBySector = buildExposure(data.holdings, (h) => h.sector || 'Unknown')
 
   const rangeStats = selection ? computeRangeStats(data.series, selection.start, selection.end) : null
@@ -834,14 +833,12 @@ export default function PaperPortfolio() {
             )}
           </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
-            <Card>
-              <ExposureBar title="Market exposure by holding" slices={exposureByHolding} />
-            </Card>
-            <Card>
-              <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
-            </Card>
-          </div>
+          {/* Per-holding exposure lived here too, but the holdings table's Weight
+              column says the same thing in more detail, so the sector split is
+              the only part that isn't duplicated. */}
+          <Card className="mb-8">
+            <ExposureBar title="Market exposure by sector" slices={exposureBySector} />
+          </Card>
 
           <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
             <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
