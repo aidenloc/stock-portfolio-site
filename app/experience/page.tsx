@@ -82,7 +82,7 @@ function ArrowIcon() {
 // theme colors rather than a reproduction of either company's real logo.
 function GoogleMark() {
   return (
-    <div className="w-9 h-9 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-serif text-base">
+    <div className="w-9 h-9 rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 flex items-center justify-center text-[var(--color-primary)] font-bold text-base">
       G
     </div>
   )
@@ -110,7 +110,7 @@ function CertificationCard({
   return (
     <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
       <div className="mb-4">{icon}</div>
-      <h3 className="font-serif text-xl mb-1">{name}</h3>
+      <h3 className="font-semibold text-xl mb-1">{name}</h3>
       <p className="text-xs uppercase tracking-widest text-gray-500 mb-5">{issuer}</p>
       <a
         href={url}
@@ -130,7 +130,7 @@ export default function ExperiencePage() {
       <Header />
 
       <div className="max-w-3xl mb-16">
-        <h1 className="font-serif text-6xl mb-4">Aiden Loc</h1>
+        <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
         <div className="flex flex-wrap gap-6 text-sm">
           <a
             href="/resume.pdf"

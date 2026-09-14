@@ -177,11 +177,12 @@ export default function PaperPortfolio() {
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
       <h1 className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2">
-        ${data.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+        ${data.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </h1>
       <div className="flex flex-wrap items-center gap-2 mb-1">
         <span className={`text-sm font-medium ${periodUp ? 'text-green-400' : 'text-red-400'}`}>
-          {periodUp ? '+' : '-'}${Math.abs(periodDollarChange).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          {periodUp ? '+' : '-'}$
+          {Math.abs(periodDollarChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
         <GainBadge value={periodReturnPct} size="md">
           {periodReturnPct >= 0 ? '+' : ''}
@@ -238,7 +239,9 @@ export default function PaperPortfolio() {
                         const point = entry?.payload as SeriesPoint | undefined
                         const pct = `${Number(value).toFixed(2)}%`
                         if (name === 'Portfolio') {
-                          const dollar = point ? `$${point.portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''
+                          const dollar = point
+                            ? `$${point.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : ''
                           return [`${pct} (${dollar})`, name]
                         }
                         const spyPrice = point?.spyPrice
@@ -296,7 +299,9 @@ export default function PaperPortfolio() {
                     <p className="text-xs text-gray-500">{h.shares} shares</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium tabular-nums">${h.currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                    <p className="font-medium tabular-nums">
+                      ${h.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
                     <GainBadge value={h.gainDollar}>
                       {h.gainDollar >= 0 ? '+' : ''}${h.gainDollar.toFixed(2)} ({h.gainDollar >= 0 ? '+' : ''}
                       {h.gainPct.toFixed(2)}%)
