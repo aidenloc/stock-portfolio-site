@@ -326,6 +326,63 @@ function CountUpMoney({ value }: { value: number }) {
   return <>{money(shown)}</>
 }
 
+// Replaces Recharts' default tooltip. That one renders each series as one
+// unwrappable line ("S&P 500 (SPY) : -1.39% ($761.78)"), which is wider than the
+// plot on a phone; capping its wrapper width only made the text overflow the box
+// instead. This lays the same numbers out in a column grid that is narrow by
+// construction, so no width cap is needed.
+type ChartTooltipPayload = { name?: string; value?: number; payload?: SeriesPoint }[] | undefined
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  period,
+}: {
+  active?: boolean
+  payload?: ChartTooltipPayload
+  label?: string | number
+  period: Period
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  const point = payload[0]?.payload
+  if (!point) return null
+
+  const rows = payload
+    .filter((p) => typeof p.value === 'number')
+    .map((p) => {
+      const isPortfolio = p.name === 'Portfolio'
+      return {
+        key: p.name ?? '',
+        name: isPortfolio ? 'Portfolio' : 'S&P 500',
+        pct: p.value as number,
+        amount: isPortfolio ? point.portfolioValue : point.spyPrice,
+      }
+    })
+
+  return (
+    <div
+      className="w-max bg-[var(--color-bg)]/95 backdrop-blur-sm border border-[var(--color-text)]/15
+                 rounded-[var(--border-radius)] px-3 py-2 text-xs shadow-lg"
+    >
+      <p className="text-gray-400 mb-1.5">{formatLabel(Number(label), period)}</p>
+      <div className="grid grid-cols-[auto_auto_auto] gap-x-3 gap-y-1 items-baseline">
+        {rows.map((r) => (
+          <Fragment key={r.key}>
+            <span className="text-gray-400">{r.name}</span>
+            <span className={`tabular-nums text-right ${r.pct >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              {signedPct(r.pct)}
+            </span>
+            <span className="tabular-nums text-right text-gray-400">
+              {typeof r.amount === 'number' ? money(r.amount) : ''}
+            </span>
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function SkeletonBlock({ className = '' }: { className?: string }) {
   return <div className={`bg-[var(--color-text)]/10 rounded-[var(--border-radius)] ${className}`} />
 }
@@ -664,25 +721,18 @@ export default function PaperPortfolio() {
                     <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
                     <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
                     <Tooltip
-                      labelFormatter={(t) => formatLabel(Number(t), period)}
-                      formatter={(value: any, name: any, entry: any) => {
-                        const point = entry?.payload as SeriesPoint | undefined
-                        const pct = `${Number(value).toFixed(2)}%`
-                        if (name === 'Portfolio') {
-                          const dollar = point ? money(point.portfolioValue) : ''
-                          return [`${pct} (${dollar})`, name]
-                        }
-                        const spyPrice = point?.spyPrice
-                        return [spyPrice ? `${pct} ($${spyPrice.toFixed(2)})` : pct, name]
-                      }}
-                      contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+                      content={({ active, payload, label }) => (
+                        <ChartTooltip
+                          active={active}
+                          payload={payload as unknown as ChartTooltipPayload}
+                          label={label}
+                          period={period}
+                        />
+                      )}
                       // Kept mounted while dragging (Recharts derives activeTooltipIndex
                       // from the same machinery) but hidden, so the hover tooltip and the
                       // range label don't stack on top of each other.
-                      // maxWidth matters on a phone: the default tooltip is wider than the
-                      // ~270px plot there, so Recharts can't clamp it inside the view box and
-                      // it pushed the page 4px wider than the viewport after a touch.
-                      wrapperStyle={{ maxWidth: 200, ...(isDragging ? { display: 'none' } : {}) }}
+                      wrapperStyle={isDragging ? { display: 'none' } : undefined}
                       allowEscapeViewBox={{ x: false, y: false }}
                     />
                     <Legend />
