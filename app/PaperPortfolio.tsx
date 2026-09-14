@@ -530,7 +530,11 @@ export default function PaperPortfolio() {
       <p className="text-xs text-gray-500 mb-8">Tracked for performance only — not real money.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-        <div>
+        {/* min-w-0 is load-bearing: a grid item defaults to min-width:auto, so the
+            1fr track couldn't shrink below the holdings table's 847px min-content
+            and the whole page scrolled sideways between 1024px and ~1323px. With
+            the track free to shrink, the table's own overflow-x-auto takes over. */}
+        <div className="min-w-0">
           <Card className="mb-6">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               {/* Selected state was conveyed by colour alone; aria-pressed makes it
@@ -592,40 +596,52 @@ export default function PaperPortfolio() {
               aria-label={`Portfolio return ${signedPct(periodReturnPct)} over the ${PERIOD_LABELS[period]}. Click and drag across the chart to compare two dates.`}
             >
               {rangeStats && (
-                // max-w keeps it inside the plot on a phone: at 270px wide the
-                // nowrap version ran off the right edge of the chart.
+                // w-max sizes the box to its content, so a long figure widens the
+                // box instead of spilling out of it; max-w still caps it against
+                // the plot on a narrow screen. The values sit in a 3-column grid
+                // rather than wrapping flex rows, which both guarantees they stay
+                // inside and lines the two percentages up for comparison — the
+                // whole point of the feature.
                 <div
                   className="absolute left-1/2 -translate-x-1/2 top-0 z-10 pointer-events-none
-                             max-w-[calc(100%-1rem)]
+                             w-max max-w-[calc(100%-1rem)]
                              bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-text)]/15
                              rounded-[var(--border-radius)] px-3 py-2 text-xs shadow-lg"
                 >
-                  <p className="text-gray-400 mb-1">
+                  <p className="text-gray-400 mb-1.5">
                     {formatLabel(rangeStats.startTime, period)} – {formatLabel(rangeStats.endTime, period)}
                   </p>
-                  <p className="flex flex-wrap items-baseline gap-x-2">
+                  <div className="grid grid-cols-[auto_auto_auto] gap-x-3 gap-y-1 items-baseline">
                     <span className="text-gray-400">Portfolio</span>
                     <span
-                      className={`font-medium tabular-nums ${
+                      className={`font-medium tabular-nums text-right ${
                         rangeStats.gainDollar >= 0 ? 'text-green-300' : 'text-red-300'
                       }`}
                     >
                       {signedMoney(rangeStats.gainDollar)}
                     </span>
-                    <span className={`tabular-nums ${rangeStats.pct >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                    <span
+                      className={`tabular-nums text-right ${
+                        rangeStats.pct >= 0 ? 'text-green-300' : 'text-red-300'
+                      }`}
+                    >
                       {signedPct(rangeStats.pct)}
                     </span>
-                  </p>
-                  {rangeStats.spyPct !== null && (
-                    <p className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-gray-400">S&amp;P 500</span>
-                      <span
-                        className={`tabular-nums ${rangeStats.spyPct >= 0 ? 'text-green-300' : 'text-red-300'}`}
-                      >
-                        {signedPct(rangeStats.spyPct)}
-                      </span>
-                    </p>
-                  )}
+
+                    {rangeStats.spyPct !== null && (
+                      <>
+                        <span className="text-gray-400">S&amp;P 500</span>
+                        <span aria-hidden />
+                        <span
+                          className={`tabular-nums text-right ${
+                            rangeStats.spyPct >= 0 ? 'text-green-300' : 'text-red-300'
+                          }`}
+                        >
+                          {signedPct(rangeStats.spyPct)}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
               {(
