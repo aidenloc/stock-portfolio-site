@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Card from './Card'
 
 type EarningsEvent = {
   ticker: string
@@ -66,8 +67,8 @@ export default function EarningsCalendar() {
   if (!events || events.length === 0) return null
 
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-4">Upcoming Earnings</p>
+    <Card>
+      <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-4">Upcoming Earnings</p>
       <div className="space-y-4">
         {events.map((e, i) => {
           const { weekday, day } = dateBadge(e.date)
@@ -75,13 +76,13 @@ export default function EarningsCalendar() {
           return (
             <div key={i} className="flex gap-3">
               <div className="shrink-0 w-11 rounded-[var(--border-radius)] bg-[var(--color-bg)] text-center py-1.5">
-                <p className="text-[10px] text-gray-500 leading-none">{weekday}</p>
+                <p className="text-[10px] text-[var(--color-text)]/45 leading-none">{weekday}</p>
                 <p className="text-base font-semibold leading-tight mt-0.5">{day}</p>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold truncate">{e.companyName || e.ticker}</p>
-                {hour && <p className="text-xs text-gray-500">{hour}</p>}
-                <p className="text-xs text-gray-500 mt-0.5">
+                {hour && <p className="text-xs text-[var(--color-text)]/45">{hour}</p>}
+                <p className="text-xs text-[var(--color-text)]/45 mt-0.5">
                   {e.quarter && `Q${e.quarter} ${e.year}`}
                   {e.epsEstimate != null && ` · EPS est. $${e.epsEstimate.toFixed(2)}`}
                   {e.revenueEstimate != null && ` · Rev est. ${formatCompact(e.revenueEstimate)}`}
@@ -99,6 +100,6 @@ export default function EarningsCalendar() {
           )
         })}
       </div>
-    </div>
+    </Card>
   )
 }

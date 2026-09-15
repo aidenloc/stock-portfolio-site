@@ -171,13 +171,13 @@ function GainBadge({ value, size = 'sm', children }: { value: number; size?: 'sm
 function ExposureBar({ title, slices }: { title: string; slices: ExposureSlice[] }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">{title}</p>
+      <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-3">{title}</p>
       <div className="flex gap-[2px] h-7 rounded-[var(--border-radius)] overflow-hidden mb-3">
         {slices.map((s) => (
           <div key={s.label} style={{ width: `${s.pct}%`, backgroundColor: s.color }} title={`${s.label}: ${s.pct.toFixed(1)}%`} />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-gray-400">
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[var(--color-text)]/60">
         {slices.map((s) => (
           <span key={s.label} className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
@@ -362,18 +362,18 @@ function ChartTooltip({
 
   return (
     <div
-      className="w-max bg-[var(--color-bg)]/95 backdrop-blur-sm border border-[var(--color-text)]/15
+      className="w-max bg-[var(--color-bg)]/95 backdrop-blur-sm border border-[var(--color-primary)]/20
                  rounded-[var(--border-radius)] px-3 py-2 text-xs shadow-lg"
     >
-      <p className="text-gray-400 mb-1.5">{formatLabel(Number(label), period)}</p>
+      <p className="text-[var(--color-text)]/60 mb-1.5">{formatLabel(Number(label), period)}</p>
       <div className="grid grid-cols-[auto_auto_auto] gap-x-3 gap-y-1 items-baseline">
         {rows.map((r) => (
           <Fragment key={r.key}>
-            <span className="text-gray-400">{r.name}</span>
+            <span className="text-[var(--color-text)]/60">{r.name}</span>
             <span className={`tabular-nums text-right ${r.pct >= 0 ? 'text-green-300' : 'text-red-300'}`}>
               {signedPct(r.pct)}
             </span>
-            <span className="tabular-nums text-right text-gray-400">
+            <span className="tabular-nums text-right text-[var(--color-text)]/60">
               {typeof r.amount === 'number' ? money(r.amount) : ''}
             </span>
           </Fragment>
@@ -564,13 +564,13 @@ export default function PaperPortfolio() {
 
   return (
     <section className="mb-[calc(var(--spacing-unit)*3rem)]">
-      <p className="text-sm text-gray-400 max-w-xl mb-5">
+      <p className="text-sm text-[var(--color-text)]/60 max-w-xl mb-5 leading-relaxed">
         A simulated portfolio I manage to practice equity research and macro positioning — real trade
         decisions, tracked against the S&amp;P 500, with no real capital at risk.
       </p>
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Paper Portfolio</p>
+      <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-2">Paper Portfolio</p>
       <h1
-        className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mb-2"
+        className="font-serif font-semibold tracking-tight text-5xl sm:text-6xl tabular-nums leading-none mb-2"
         aria-label={money(data.totalValue)}
       >
         <CountUpMoney value={data.totalValue} />
@@ -583,7 +583,7 @@ export default function PaperPortfolio() {
           {signedPct(periodReturnPct)} · {period}
         </GainBadge>
       </div>
-      <p className="text-xs text-gray-500 mb-8">Tracked for performance only — not real money.</p>
+      <p className="text-xs text-[var(--color-text)]/45 mb-8">Tracked for performance only — not real money.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
         {/* min-w-0 is load-bearing: a grid item defaults to min-width:auto, so the
@@ -603,8 +603,10 @@ export default function PaperPortfolio() {
                     onClick={() => setPeriod(p)}
                     aria-pressed={period === p}
                     aria-label={`Show ${PERIOD_LABELS[p]}`}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                      period === p ? 'bg-[var(--color-primary)] text-white' : 'text-gray-400 hover:text-[var(--color-text)]'
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
+                      period === p
+                        ? 'bg-[var(--color-primary)] text-[var(--color-bg)]'
+                        : 'text-[var(--color-text)]/60 hover:text-[var(--color-text)]'
                     }`}
                   >
                     {p}
@@ -617,7 +619,9 @@ export default function PaperPortfolio() {
                 aria-pressed={showBenchmark}
                 aria-label="Overlay the S&P 500 benchmark"
                 className={`ml-auto px-3 py-1 rounded-full text-sm border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] ${
-                  showBenchmark ? 'border-[var(--color-text)]/40' : 'border-[var(--color-text)]/10 text-gray-400'
+                  showBenchmark
+                    ? 'border-[var(--color-primary)]/40'
+                    : 'border-[var(--color-text)]/10 text-[var(--color-text)]/60'
                 }`}
               >
                 S&amp;P 500
@@ -661,14 +665,14 @@ export default function PaperPortfolio() {
                 <div
                   className="absolute left-1/2 -translate-x-1/2 top-0 z-10 pointer-events-none
                              w-max max-w-[calc(100%-1rem)]
-                             bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-text)]/15
+                             bg-[var(--color-bg)]/90 backdrop-blur-sm border border-[var(--color-primary)]/20
                              rounded-[var(--border-radius)] px-3 py-2 text-xs shadow-lg"
                 >
-                  <p className="text-gray-400 mb-1.5">
+                  <p className="text-[var(--color-text)]/60 mb-1.5">
                     {formatLabel(rangeStats.startTime, period)} – {formatLabel(rangeStats.endTime, period)}
                   </p>
                   <div className="grid grid-cols-[auto_auto_auto] gap-x-3 gap-y-1 items-baseline">
-                    <span className="text-gray-400">Portfolio</span>
+                    <span className="text-[var(--color-text)]/60">Portfolio</span>
                     <span
                       className={`font-medium tabular-nums text-right ${
                         rangeStats.gainDollar >= 0 ? 'text-green-300' : 'text-red-300'
@@ -686,7 +690,7 @@ export default function PaperPortfolio() {
 
                     {rangeStats.spyPct !== null && (
                       <>
-                        <span className="text-gray-400">S&amp;P 500</span>
+                        <span className="text-[var(--color-text)]/60">S&amp;P 500</span>
                         <span aria-hidden />
                         <span
                           className={`tabular-nums text-right ${
@@ -716,9 +720,9 @@ export default function PaperPortfolio() {
                         <stop offset="95%" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#333" vertical={false} />
-                    <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
-                    <YAxis domain={['auto', 'auto']} stroke="#888" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                    <CartesianGrid stroke="#332f2a" vertical={false} />
+                    <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#8c8479" minTickGap={40} />
+                    <YAxis domain={['auto', 'auto']} stroke="#8c8479" width={60} tickFormatter={(v) => `${v.toFixed(0)}%`} />
                     <Tooltip
                       content={({ active, payload, label }) => (
                         <ChartTooltip
@@ -755,7 +759,7 @@ export default function PaperPortfolio() {
                         type="linear"
                         dataKey="spyReturnPct"
                         name="S&P 500 (SPY)"
-                        stroke="#888"
+                        stroke="#8c8479"
                         dot={false}
                         strokeWidth={2}
                         strokeDasharray="4 4"
@@ -823,7 +827,7 @@ export default function PaperPortfolio() {
               )}
             </div>
             {entryMarkers.length > 0 && (
-              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5">
+              <p className="text-xs text-[var(--color-text)]/60 mt-2 flex items-center gap-1.5">
                 <span
                   aria-hidden
                   className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary)] ring-2 ring-[var(--color-bg)]"
@@ -841,7 +845,7 @@ export default function PaperPortfolio() {
           </Card>
 
           <Card className="p-[calc(var(--spacing-unit)*0.5rem)] sm:p-[calc(var(--spacing-unit)*0.75rem)]">
-            <p className="text-xs uppercase tracking-wide text-gray-500 px-4 pt-3 pb-2">Holdings</p>
+            <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 px-4 pt-3 pb-2">Holdings</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <caption className="sr-only">
@@ -861,11 +865,12 @@ export default function PaperPortfolio() {
                           <button
                             type="button"
                             onClick={() => toggleSort(col.key)}
-                            // gray-500 measured 4.19:1 against the card surface, under AA's 4.5
-                            // for text this size; gray-400 measures 7.79:1.
+                            // /65 opacity on the warm ivory measured comfortably over AA
+                            // against the card surface -- same reasoning as Header's nav
+                            // links, warm by construction rather than a fixed cool gray.
                             className={`inline-flex items-center gap-1 text-xs uppercase tracking-wide transition-colors ${
                               col.numeric ? 'flex-row-reverse' : ''
-                            } ${active ? 'text-[var(--color-text)]' : 'text-gray-400 hover:text-[var(--color-text)]'}`}
+                            } ${active ? 'text-[var(--color-text)]' : 'text-[var(--color-text)]/65 hover:text-[var(--color-text)]'}`}
                           >
                             {col.label}
                             <span aria-hidden className={active ? '' : 'opacity-0'}>
@@ -902,7 +907,7 @@ export default function PaperPortfolio() {
                                       : `Show investment thesis for ${h.ticker}`
                                   }
                                   aria-expanded={expanded}
-                                  className="text-gray-500 hover:text-[var(--color-text)] transition-colors p-1 rounded-full"
+                                  className="text-[var(--color-text)]/45 hover:text-[var(--color-text)] transition-colors p-1 rounded-full"
                                 >
                                   <svg
                                     width="12"
@@ -921,15 +926,15 @@ export default function PaperPortfolio() {
                               )}
                             </span>
                           </td>
-                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">
+                          <td className="px-3 py-3 text-right tabular-nums text-[var(--color-text)]/60">
                             {h.shares.toLocaleString()}
                           </td>
-                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">{money(h.entryPrice)}</td>
+                          <td className="px-3 py-3 text-right tabular-nums text-[var(--color-text)]/60">{money(h.entryPrice)}</td>
                           <td className="px-3 py-3 text-right tabular-nums">{money(h.currentPrice)}</td>
                           <td className="px-3 py-3 text-right tabular-nums font-medium">{money(h.currentValue)}</td>
                           <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap">
                             {h.dayChangePct === null ? (
-                              <span className="text-gray-600">—</span>
+                              <span className="text-[var(--color-text)]/35">—</span>
                             ) : (
                               <span className={h.dayChangePct >= 0 ? 'text-green-300' : 'text-red-300'}>
                                 {signedPct(h.dayChangePct)}
@@ -941,14 +946,14 @@ export default function PaperPortfolio() {
                               {signedMoney(h.gainDollar)} ({signedPct(h.gainPct)})
                             </GainBadge>
                           </td>
-                          <td className="px-3 py-3 text-right tabular-nums text-gray-400">
+                          <td className="px-3 py-3 text-right tabular-nums text-[var(--color-text)]/60">
                             {h.weightPct.toFixed(1)}%
                           </td>
                         </tr>
                         {expanded && h.thesis && (
                           <tr className="border-b border-[var(--color-text)]/5">
                             <td colSpan={COLUMNS.length} className="px-3 pb-3">
-                              <p className="text-sm text-gray-400 italic max-w-2xl">{h.thesis}</p>
+                              <p className="text-sm text-[var(--color-text)]/60 italic max-w-2xl">{h.thesis}</p>
                             </td>
                           </tr>
                         )}

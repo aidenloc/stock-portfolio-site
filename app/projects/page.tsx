@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Footer from '../Footer'
 import Card from '../Card'
-import { ArrowIcon } from '../icons'
+import { CardCta } from '../CardCta'
 import { PROJECTS } from '@/lib/projects'
 
 const DESCRIPTION =
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs uppercase tracking-widest text-gray-500 border border-[var(--color-text)]/15 rounded-[var(--border-radius)] px-2.5 py-1">
+    <span className="text-xs uppercase tracking-widest text-[var(--color-text)]/45 border border-[var(--color-primary)]/20 rounded-[var(--border-radius)] px-2.5 py-1">
       {children}
     </span>
   )
@@ -31,22 +31,22 @@ function Tag({ children }: { children: React.ReactNode }) {
 export default function ProjectsPage() {
   return (
     <>
-      <div className="max-w-2xl">
-        <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Projects</p>
-        <h1 className="text-4xl font-bold mb-8">Research &amp; Modeling</h1>
+      <div className="max-w-2xl mt-10">
+        <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-2">Projects</p>
+        <h1 className="font-serif font-semibold tracking-tight text-4xl sm:text-5xl mb-10">Research &amp; Modeling</h1>
 
         <Card>
           {/* Title/tags come from lib/projects so the home page's preview card
               can reference this project without restating it. */}
-          <p className="text-xs text-gray-600 mb-2">{PROJECTS[0].number}</p>
-          <h2 className="text-2xl font-bold mb-3">{PROJECTS[0].title}</h2>
+          <p className="text-xs text-[var(--color-primary)]/70 font-serif mb-2">{PROJECTS[0].number}</p>
+          <h2 className="font-serif font-semibold text-2xl mb-3">{PROJECTS[0].title}</h2>
           <div className="flex flex-wrap gap-2 mb-6">
             {PROJECTS[0].tags.map((tag) => (
               <Tag key={tag}>{tag}</Tag>
             ))}
           </div>
 
-          <div className="space-y-6 text-sm text-gray-400 leading-relaxed">
+          <div className="space-y-6 text-sm text-[var(--color-text)]/60 leading-relaxed">
             <div>
               <h3 className="text-[var(--color-text)] font-semibold mb-2">Why I built this</h3>
               <p>
@@ -113,9 +113,9 @@ export default function ProjectsPage() {
             href="https://github.com/aidenloc/stock-portfolio-site"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors mt-6"
+            className="group inline-flex mt-6"
           >
-            View Source on GitHub <ArrowIcon />
+            <CardCta label="View Source on GitHub" />
           </a>
         </Card>
       </div>

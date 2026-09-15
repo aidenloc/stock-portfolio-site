@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Footer from '../Footer'
 import ContactLinks from '../ContactLinks'
-import { ArrowIcon } from '../icons'
+import Card from '../Card'
+import { CardCta } from '../CardCta'
 import { allEntriesByMostRecent, KIND_LABEL, type ExperienceEntry } from '@/lib/experience'
 
 const DESCRIPTION =
@@ -27,9 +28,9 @@ export const metadata: Metadata = {
 function SectionHeading({ number, title }: { number: string; title: string }) {
   return (
     <div className="flex items-center gap-4 mb-8 mt-16 first:mt-0">
-      <span className="text-sm text-gray-600">{number}</span>
+      <span className="text-sm text-[var(--color-primary)]/70 font-serif">{number}</span>
       <div className="flex-1 h-px bg-[var(--color-text)]/15" />
-      <span className="text-xs uppercase tracking-widest text-gray-500">{title}</span>
+      <span className="text-xs uppercase tracking-widest text-[var(--color-text)]/45">{title}</span>
     </div>
   )
 }
@@ -41,11 +42,11 @@ function TimelineEntry({ entry, isLast }: { entry: ExperienceEntry; isLast: bool
   return (
     <li className="relative pl-8 pb-10 last:pb-0">
       {!isLast && (
-        <span aria-hidden className="absolute left-[5px] top-4 bottom-0 w-px bg-[var(--color-text)]/15" />
+        <span aria-hidden className="absolute left-[4.5px] top-4 bottom-0 w-px bg-[var(--color-text)]/15" />
       )}
       <span
         aria-hidden
-        className="absolute left-0 top-[5px] w-[11px] h-[11px] rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg)]"
+        className="absolute left-0 top-[6px] w-[9px] h-[9px] rounded-full border border-[var(--color-primary)]/70 bg-[var(--color-bg)]"
       />
 
       {/* flex-wrap matters at phone width: the dates carry whitespace-nowrap, so
@@ -53,18 +54,18 @@ function TimelineEntry({ entry, isLast }: { entry: ExperienceEntry; isLast: bool
           pushed the page past a 390px viewport. Wrapping lets them drop below. */}
       <div className="flex flex-wrap justify-between items-baseline gap-x-4">
         <h3 className="font-semibold">{entry.org}</h3>
-        <span className="text-xs text-gray-500 whitespace-nowrap">{entry.location}</span>
+        <span className="text-xs text-[var(--color-text)]/45 whitespace-nowrap">{entry.location}</span>
       </div>
       <div className="flex flex-wrap justify-between items-baseline gap-x-4 mb-2">
-        <p className="text-sm italic text-gray-400">
+        <p className="text-sm italic text-[var(--color-text)]/60">
           {entry.role}
-          <span className="not-italic text-[10px] uppercase tracking-widest text-gray-600 ml-2">
+          <span className="not-italic text-[10px] uppercase tracking-widest text-[var(--color-text)]/35 ml-2">
             {KIND_LABEL[entry.kind]}
           </span>
         </p>
-        <span className="text-xs text-gray-500 whitespace-nowrap">{entry.dates}</span>
+        <span className="text-xs text-[var(--color-text)]/45 whitespace-nowrap">{entry.dates}</span>
       </div>
-      <ul className="list-disc list-outside ml-4 space-y-1.5 text-sm text-gray-400">
+      <ul className="list-disc list-outside ml-4 space-y-1.5 text-sm text-[var(--color-text)]/60 leading-relaxed">
         {entry.bullets.map((b, i) => (
           <li key={i}>{b}</li>
         ))}
@@ -103,27 +104,22 @@ function CertificationCard({
   url: string
 }) {
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)] border border-transparent hover:border-[var(--color-text)]/10 transition-colors">
+    <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-primary)]/30">
       <div className="mb-4">{icon}</div>
       <h3 className="font-semibold text-xl mb-1">{name}</h3>
-      <p className="text-xs uppercase tracking-widest text-gray-500 mb-5">{issuer}</p>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors"
-      >
-        View Certificate <ArrowIcon />
+      <p className="text-xs uppercase tracking-widest text-[var(--color-text)]/45 mb-5">{issuer}</p>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="group inline-flex">
+        <CardCta label="View Certificate" />
       </a>
-    </div>
+    </Card>
   )
 }
 
 export default function ExperiencePage() {
   return (
     <>
-      <div className="max-w-3xl mb-16">
-        <h1 className="text-6xl font-bold mb-4">Aiden Loc</h1>
+      <div className="max-w-3xl mb-20 mt-10">
+        <h1 className="font-serif font-semibold tracking-tight text-6xl mb-5">Aiden Loc</h1>
         <ContactLinks />
       </div>
 
@@ -161,7 +157,7 @@ export default function ExperiencePage() {
         </div>
 
         <SectionHeading number="03" title="Technical Skills" />
-        <div className="text-sm text-gray-400 space-y-2 mb-8">
+        <div className="text-sm text-[var(--color-text)]/60 space-y-2 mb-8 leading-relaxed">
           <p>
             <span className="text-[var(--color-text)] font-medium">Languages:</span> English
           </p>

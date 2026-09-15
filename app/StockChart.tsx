@@ -57,13 +57,13 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="border border-[var(--color-text)]/10 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)] w-full max-w-2xl shadow-2xl"
+        className="border border-[var(--color-primary)]/15 rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)] w-full max-w-2xl shadow-2xl"
         style={{ backgroundColor: 'var(--color-card)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{ticker}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+          <h2 className="font-serif font-semibold text-xl">{ticker}</h2>
+          <button onClick={onClose} className="text-[var(--color-text)]/60 hover:text-[var(--color-text)] text-xl">✕</button>
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -71,8 +71,8 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1 rounded-[var(--border-radius)] text-sm ${
-                period === p ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-text)]/10'
+              className={`px-3 py-1 rounded-[var(--border-radius)] text-sm font-medium ${
+                period === p ? 'bg-[var(--color-primary)] text-[var(--color-bg)]' : 'bg-[var(--color-text)]/10 text-[var(--color-text)]/60'
               }`}
             >
               {p}
@@ -82,19 +82,22 @@ export default function StockChart({ ticker, onClose }: { ticker: string; onClos
 
         <div className="h-72">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">Loading chart...</div>
+            <div className="flex items-center justify-center h-full text-[var(--color-text)]/60">Loading chart...</div>
           ) : error ? (
             <div className="flex items-center justify-center h-full text-red-500">{error}</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points}>
-                <CartesianGrid stroke="#333" vertical={false} />
-                <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#888" minTickGap={40} />
-                <YAxis domain={['auto', 'auto']} stroke="#888" width={60} />
+                <CartesianGrid stroke="#332f2a" vertical={false} />
+                <XAxis dataKey="time" tickFormatter={(t) => formatLabel(t, period)} stroke="#8c8479" minTickGap={40} />
+                <YAxis domain={['auto', 'auto']} stroke="#8c8479" width={60} />
                 <Tooltip
                   labelFormatter={(t) => formatLabel(Number(t), period)}
                   formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                  contentStyle={{ backgroundColor: '#111', border: '1px solid #444' }}
+                  contentStyle={{
+                    backgroundColor: 'var(--color-bg)',
+                    border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                  }}
                 />
                 {/* linear, not monotone -- same reasoning as the performance
                     chart: a spline between two closes can draw a price that

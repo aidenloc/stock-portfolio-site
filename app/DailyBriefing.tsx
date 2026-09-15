@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Card from './Card'
 
 type NewsItem = { headline: string; summary: string; source: string; url: string; datetime: number }
 type TickerBriefing = { ticker: string; headlines: NewsItem[] }
@@ -33,9 +34,11 @@ export default function DailyBriefing() {
   if (!data || !data.content || data.content.length === 0) return null
 
   return (
-    <div className="bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.75rem)]">
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Daily Briefing</p>
-      {data.briefing_date && <p className="text-xs text-gray-600 mb-4">{formatBriefingDate(data.briefing_date)}</p>}
+    <Card>
+      <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-1">Daily Briefing</p>
+      {data.briefing_date && (
+        <p className="text-xs text-[var(--color-text)]/35 mb-4">{formatBriefingDate(data.briefing_date)}</p>
+      )}
 
       <div className="space-y-5">
         {data.content.map((tb) => (
@@ -52,7 +55,7 @@ export default function DailyBriefing() {
                   >
                     {h.headline}
                   </a>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-[var(--color-text)]/45 mt-0.5">
                     {h.source}
                     {h.datetime ? ` · ${relativeAge(h.datetime)}` : ''}
                   </p>
@@ -62,6 +65,6 @@ export default function DailyBriefing() {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
