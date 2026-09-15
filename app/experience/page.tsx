@@ -118,12 +118,12 @@ function CertificationCard({
 export default function ExperiencePage() {
   return (
     <>
-      <div className="max-w-3xl mb-20 mt-10">
+      <div className="max-w-3xl mx-auto mb-20 mt-10">
         <h1 className="font-serif font-semibold tracking-tight text-6xl mb-5">Aiden Loc</h1>
         <ContactLinks />
       </div>
 
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto">
         {/* Education, work and extracurriculars share one chronological thread
             rather than three separately-labelled stacks; each entry keeps a small
             kind label so the distinction isn't lost in the merge. */}

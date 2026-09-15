@@ -31,7 +31,7 @@ function Tag({ children }: { children: React.ReactNode }) {
 export default function ProjectsPage() {
   return (
     <>
-      <div className="max-w-2xl mt-10">
+      <div className="max-w-2xl mx-auto mt-10">
         <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-2">Projects</p>
         <h1 className="font-serif font-semibold tracking-tight text-4xl sm:text-5xl mb-10">Research &amp; Modeling</h1>
 
