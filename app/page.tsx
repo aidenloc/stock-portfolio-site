@@ -4,7 +4,7 @@ import Footer from './Footer'
 import ContactLinks from './ContactLinks'
 import PortfolioPreviewCard from './PortfolioPreviewCard'
 import { CardCta } from './CardCta'
-import { POSITIONING, THESIS } from '@/lib/siteContent'
+import { POSITIONING } from '@/lib/siteContent'
 import { CURRENT_ROLE } from '@/lib/experience'
 import { PROJECTS } from '@/lib/projects'
 
@@ -65,11 +65,6 @@ export default function Home() {
         <h1 className="font-serif font-semibold tracking-tight text-6xl sm:text-7xl mb-5">Aiden Loc</h1>
         <p className="text-lg text-[var(--color-text)]/85 mb-8 leading-relaxed">{POSITIONING}</p>
         <ContactLinks />
-      </section>
-
-      {/* Thesis */}
-      <section className="max-w-3xl mb-20">
-        <p className="text-sm text-[var(--color-text)]/60 leading-[1.8]">{THESIS}</p>
       </section>
 
       {/* Preview cards */}
