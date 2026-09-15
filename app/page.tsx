@@ -61,14 +61,14 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="max-w-3xl mt-10 mb-20">
-        <h1 className="font-serif font-semibold tracking-tight text-6xl sm:text-7xl mb-5">Aiden Loc</h1>
-        <p className="text-lg text-[var(--color-text)]/85 mb-8 leading-relaxed">{POSITIONING}</p>
+      <section className="max-w-3xl mt-16 sm:mt-28 mb-24 sm:mb-40">
+        <h1 className="font-serif font-semibold tracking-tight text-6xl sm:text-7xl mb-6">Aiden Loc</h1>
+        <p className="text-lg text-[var(--color-text)]/85 mb-10 leading-relaxed">{POSITIONING}</p>
         <ContactLinks />
       </section>
 
       {/* Preview cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24 sm:mb-32">
         <PortfolioPreviewCard />
         <PreviewCard
           eyebrow="Experience"
