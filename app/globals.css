@@ -5,11 +5,23 @@
   --foreground: #171717;
 }
 
+/* Home fits without scrolling; Portfolio/Experience/Projects all overflow
+   and get a vertical scrollbar. Without this, the scrollbar's width (real,
+   layout-affecting space on Windows -- not an overlay) came and went between
+   routes, so the whole page -- nav bar included -- visibly shifted sideways
+   on every navigation. Reserving the gutter unconditionally keeps content
+   width constant regardless of whether the current page happens to scroll. */
+html {
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Display serif for headlines/large figures -- everything else stays sans. */
+  --font-serif: var(--font-fraunces);
 }
 
 @media (prefers-color-scheme: dark) {

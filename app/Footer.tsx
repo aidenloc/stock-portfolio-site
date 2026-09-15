@@ -1,8 +1,8 @@
 export default function Footer() {
   return (
-    <footer className="mt-16 pt-6 border-t border-[var(--color-text)]/10 flex items-center justify-center gap-3 text-xs text-gray-500">
+    <footer className="mt-16 pt-6 border-t border-[var(--color-text)]/10 flex items-center justify-center gap-3 text-xs text-[var(--color-text)]/45">
       <span>© {new Date().getFullYear()} Aiden Loc</span>
-      <span className="text-gray-700">·</span>
+      <span className="text-[var(--color-text)]/25">·</span>
       <a href="/admin/login" className="hover:text-[var(--color-text)] transition-colors">
         Admin
       </a>

@@ -5,7 +5,7 @@ import { FileIcon, LinkedInIcon, MailIcon } from './icons'
 // /experience header so the two can't drift apart.
 export default function ContactLinks({ className = '' }: { className?: string }) {
   const linkClass =
-    'flex items-center gap-2 uppercase tracking-wide text-gray-400 hover:text-[var(--color-text)] transition-colors'
+    'flex items-center gap-2 uppercase tracking-wide text-[var(--color-text)]/60 hover:text-[var(--color-text)] transition-colors'
 
   return (
     <div className={`flex flex-wrap gap-6 text-sm ${className}`}>

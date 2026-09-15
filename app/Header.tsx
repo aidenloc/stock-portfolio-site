@@ -39,12 +39,14 @@ export default function Header() {
     return () => clearTimeout(timer)
   }, [pathname])
 
-  // gray-500 measured 4.19:1 against this background, under AA's 4.5 for text
-  // this size (same finding as the holdings table's sort headers).
+  // /60 opacity on the warm ivory text measures ~6.4:1 against this
+  // background -- comfortably AA-compliant and, unlike a fixed Tailwind
+  // gray, warm by construction since it's the same ivory blended with the
+  // (also warm) page background rather than a separate cool-neutral tone.
   const linkClass = (active: boolean) =>
     active
       ? 'font-medium text-[var(--color-text)]'
-      : 'text-gray-400 hover:text-[var(--color-text)] transition-colors'
+      : 'text-[var(--color-text)]/60 hover:text-[var(--color-text)] transition-colors'
 
   const guardClick = (e: React.MouseEvent) => {
     if (locked) e.preventDefault()
@@ -61,7 +63,7 @@ export default function Header() {
         className={`text-lg tracking-tight ${
           pathname === HOME.href
             ? 'font-bold text-[var(--color-text)]'
-            : 'font-bold text-gray-400 hover:text-[var(--color-text)] transition-colors'
+            : 'font-bold text-[var(--color-text)]/60 hover:text-[var(--color-text)] transition-colors'
         }`}
       >
         {HOME.label}

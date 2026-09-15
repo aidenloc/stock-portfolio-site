@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Footer from './Footer'
 import ContactLinks from './ContactLinks'
 import PortfolioPreviewCard from './PortfolioPreviewCard'
-import { ArrowIcon } from './icons'
+import { CardCta } from './CardCta'
 import { POSITIONING, THESIS } from '@/lib/siteContent'
 import { CURRENT_ROLE } from '@/lib/experience'
 import { PROJECTS } from '@/lib/projects'
@@ -41,15 +41,16 @@ function PreviewCard({
   return (
     <Link
       href={href}
-      className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
-                 border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
+      className="group relative flex flex-col rounded-[var(--border-radius)] bg-[var(--color-card)]
+                 p-[calc(var(--spacing-unit)*2.25rem)] border border-[var(--color-primary)]/15
+                 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_16px_32px_-16px_rgba(0,0,0,0.45)]
+                 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-primary)]/30
+                 hover:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_20px_40px_-16px_rgba(0,0,0,0.55)]"
     >
-      <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">{eyebrow}</p>
+      <p className="text-xs uppercase tracking-widest text-[var(--color-text)]/45 mb-3">{eyebrow}</p>
       <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-gray-400 mb-4">{body}</p>
-      <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
-        {cta} <ArrowIcon />
-      </span>
+      <p className="text-sm text-[var(--color-text)]/60 mb-4 leading-relaxed">{body}</p>
+      <CardCta label={cta} />
     </Link>
   )
 }
@@ -60,19 +61,19 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="max-w-3xl mt-8 mb-14">
-        <h1 className="text-5xl sm:text-6xl font-bold mb-4">Aiden Loc</h1>
-        <p className="text-lg text-gray-300 mb-6">{POSITIONING}</p>
+      <section className="max-w-3xl mt-10 mb-20">
+        <h1 className="font-serif font-semibold tracking-tight text-6xl sm:text-7xl mb-5">Aiden Loc</h1>
+        <p className="text-lg text-[var(--color-text)]/85 mb-8 leading-relaxed">{POSITIONING}</p>
         <ContactLinks />
       </section>
 
       {/* Thesis */}
-      <section className="max-w-3xl mb-16">
-        <p className="text-sm text-gray-400 leading-relaxed">{THESIS}</p>
+      <section className="max-w-3xl mb-20">
+        <p className="text-sm text-[var(--color-text)]/60 leading-[1.8]">{THESIS}</p>
       </section>
 
       {/* Preview cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
         <PortfolioPreviewCard />
         <PreviewCard
           eyebrow="Experience"

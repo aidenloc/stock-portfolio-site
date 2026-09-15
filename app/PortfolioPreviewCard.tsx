@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowIcon } from './icons'
+import { CardCta } from './CardCta'
 
 type SeriesPoint = { time: number; portfolioReturnPct: number }
 
@@ -84,16 +84,19 @@ export default function PortfolioPreviewCard() {
   return (
     <Link
       href="/portfolio"
-      className="group bg-[var(--color-card)] rounded-[var(--border-radius)] p-[calc(var(--spacing-unit)*1.5rem)]
-                 border border-transparent hover:border-[var(--color-text)]/15 transition-colors flex flex-col"
+      className="group relative flex flex-col rounded-[var(--border-radius)] bg-[var(--color-card)]
+                 p-[calc(var(--spacing-unit)*2.25rem)] border border-[var(--color-primary)]/15
+                 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_16px_32px_-16px_rgba(0,0,0,0.45)]
+                 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-primary)]/30
+                 hover:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_20px_40px_-16px_rgba(0,0,0,0.55)]"
     >
-      <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">Portfolio</p>
+      <p className="text-xs uppercase tracking-widest text-[var(--color-text)]/45 mb-3">Portfolio</p>
 
       <div className="flex items-end justify-between gap-3 mb-2 min-h-[42px]">
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Today</p>
+          <p className="text-xs text-[var(--color-text)]/45 mb-0.5">Today</p>
           {todayPct === null ? (
-            <span className={`text-2xl font-bold ${failed ? 'text-gray-600' : 'animate-pulse text-gray-700'}`}>
+            <span className={`text-2xl font-bold ${failed ? 'text-[var(--color-text)]/35' : 'animate-pulse text-[var(--color-text)]/25'}`}>
               {failed ? '—' : '···'}
             </span>
           ) : (
@@ -108,13 +111,11 @@ export default function PortfolioPreviewCard() {
         )}
       </div>
 
-      <p className="text-sm text-gray-400 mb-4">
+      <p className="text-sm text-[var(--color-text)]/60 mb-4 leading-relaxed">
         A simulated portfolio tracked against the S&amp;P 500, with a thesis behind each position.
       </p>
 
-      <span className="mt-auto inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-400 group-hover:text-[var(--color-text)] transition-colors">
-        View portfolio <ArrowIcon />
-      </span>
+      <CardCta label="View portfolio" />
     </Link>
   )
 }

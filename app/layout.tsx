@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { supabase } from "@/lib/supabaseClient";
 import SiteChrome from "./SiteChrome";
@@ -12,6 +12,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Display serif for headlines and large figures only (the hero name, page
+// titles, the portfolio dollar value) -- everything else stays on the sans
+// body font. That pairing, not any single color choice, is most of what
+// reads as private-banking rather than SaaS-dashboard.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const SITE_URL = "https://stock-portfolio-site.vercel.app";
@@ -71,9 +81,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     : 'color-mix(in srgb, var(--color-bg) 100%, white 8%)'
 
   const themeStyle = {
-    '--color-bg': settings?.background_color ? `#${settings.background_color.replace('#', '')}` : '#000000',
-    '--color-text': settings?.text_color ? `#${settings.text_color.replace('#', '')}` : '#ffffff',
-    '--color-primary': settings?.primary_color ? `#${settings.primary_color.replace('#', '')}` : '#2563eb',
+    // Deep ink/charcoal with a faint warm undertone (not navy-tinted), a warm
+    // ivory instead of pure white, and a muted gold/bronze accent in place of
+    // the old blue -- the private-banking palette, as the fallback used
+    // whenever the admin panel hasn't overridden a color.
+    '--color-bg': settings?.background_color ? `#${settings.background_color.replace('#', '')}` : '#0d0c0a',
+    '--color-text': settings?.text_color ? `#${settings.text_color.replace('#', '')}` : '#f2ede4',
+    '--color-primary': settings?.primary_color ? `#${settings.primary_color.replace('#', '')}` : '#c9a961',
     // Card surface for the dashboard's card-based layout. Left unset by an
     // admin, it derives a subtle lifted shade from the background instead of
     // a hardcoded color, so it adapts to whatever background is picked.
@@ -95,7 +109,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
       style={themeStyle}
     >
       <body

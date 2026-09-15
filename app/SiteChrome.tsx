@@ -64,7 +64,14 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <main className="max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
+    // w-full is load-bearing: <body> is a flex column, and a flex item with
+    // mx-auto but no explicit width shrink-wraps to its own content's natural
+    // width instead of stretching to fill -- harmless on Home/Portfolio,
+    // whose content is wide enough to hit the available width anyway, but on
+    // Experience/Projects (entirely max-w-3xl content) the whole <main>,
+    // header included, shrank to ~768px and centered, so the nav bar visibly
+    // jumped sideways on every navigation between a wide and a narrow page.
+    <main className="w-full max-w-[1600px] mx-auto p-[calc(var(--spacing-unit)*2rem)]">
       <Header />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
