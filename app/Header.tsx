@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 
 // Home occupies the top-left slot on its own; the rest sit in the right-hand
 // group. It isn't repeated in NAV_LINKS -- one link per destination.
@@ -13,8 +14,30 @@ const NAV_LINKS = [
   { href: '/projects', label: 'Projects' },
 ]
 
+// Matches SiteChrome's exit duration (180ms) plus a small buffer for timer
+// jitter. See SiteChrome.tsx for why this exists: without it, a second click
+// fired before the first page's exit animation finishes can start a second,
+// overlapping transition -- and under enough of those in quick succession,
+// nav and content could end up on different pages with no bound on how far
+// apart. Locking clicks for one exit's worth of time means only one
+// transition is ever in flight, so that drift can't happen.
+const NAV_LOCK_MS = 200
+
 export default function Header() {
   const pathname = usePathname()
+  const [locked, setLocked] = useState(false)
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    // Don't lock on mount -- only on an actual route change.
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    setLocked(true)
+    const timer = setTimeout(() => setLocked(false), NAV_LOCK_MS)
+    return () => clearTimeout(timer)
+  }, [pathname])
 
   // gray-500 measured 4.19:1 against this background, under AA's 4.5 for text
   // this size (same finding as the holdings table's sort headers).
@@ -23,6 +46,10 @@ export default function Header() {
       ? 'font-medium text-[var(--color-text)]'
       : 'text-gray-400 hover:text-[var(--color-text)] transition-colors'
 
+  const guardClick = (e: React.MouseEvent) => {
+    if (locked) e.preventDefault()
+  }
+
   // gap-x-4 rather than a bare justify-between: at 375px the left link and the
   // first nav link were almost touching in the middle.
   return (
@@ -30,6 +57,7 @@ export default function Header() {
       <Link
         href={HOME.href}
         aria-current={pathname === HOME.href ? 'page' : undefined}
+        onClick={guardClick}
         className={`text-lg tracking-tight ${
           pathname === HOME.href
             ? 'font-bold text-[var(--color-text)]'
@@ -46,6 +74,7 @@ export default function Header() {
               key={link.href}
               href={link.href}
               aria-current={active ? 'page' : undefined}
+              onClick={guardClick}
               className={linkClass(active)}
             >
               {link.label}
