@@ -11,7 +11,7 @@ import {
   CartesianGrid,
   ReferenceArea,
 } from 'recharts'
-import { formatAxisDate, formatFullDate, recessionsInRange, SERIES_COLORS, type MergedPoint } from '@/lib/macro'
+import { formatFullDate, recessionsInRange, SERIES_COLORS, type MergedPoint, type TimeAxis } from '@/lib/macro'
 
 const SERIES: { key: 'DGS3MO' | 'DGS2' | 'DGS10'; name: string }[] = [
   { key: 'DGS3MO', name: '3-Month' },
@@ -46,14 +46,20 @@ function YieldTooltip({
   )
 }
 
-export default function YieldCurveChart({ data }: { data: MergedPoint[] }) {
+export default function YieldCurveChart({
+  data,
+  domain,
+  axis,
+}: {
+  data: MergedPoint[]
+  domain: [number, number]
+  axis: TimeAxis
+}) {
   if (data.length === 0) {
     return <p className="text-sm text-[var(--color-text)]/60 py-8 text-center">No Treasury yield data cached yet.</p>
   }
 
-  const minTime = data[0].time
-  const maxTime = data[data.length - 1].time
-  const bands = recessionsInRange(minTime, maxTime)
+  const bands = recessionsInRange(domain[0], domain[1])
 
   const latest = data[data.length - 1]
   const summary = SERIES.map((s) => `${s.name} ${typeof latest[s.key] === 'number' ? `${(latest[s.key] as number).toFixed(2)}%` : 'n/a'}`).join(
@@ -66,7 +72,14 @@ export default function YieldCurveChart({ data }: { data: MergedPoint[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <CartesianGrid stroke="#332f2a" vertical={false} />
-          <XAxis dataKey="time" type="number" domain={['dataMin', 'dataMax']} tickFormatter={formatAxisDate} stroke="#8c8479" minTickGap={40} />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={domain}
+            ticks={axis.ticks}
+            tickFormatter={axis.formatTick}
+            stroke="#8c8479"
+          />
           <YAxis domain={['auto', 'auto']} stroke="#8c8479" width={48} tickFormatter={(v) => `${v}%`} />
           <Tooltip content={<YieldTooltip />} />
           <Legend />

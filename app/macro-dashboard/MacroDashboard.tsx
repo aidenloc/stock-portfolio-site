@@ -13,6 +13,7 @@ import {
   computeTrailingReturns,
   rangeCutoff,
   decimate,
+  buildTimeAxis,
   DATE_RANGE_OPTIONS,
   ALL_YAHOO_SYMBOLS,
   type DateRange,
@@ -102,6 +103,20 @@ export default function MacroDashboard() {
     [inflationMerged, range]
   )
 
+  // One domain and tick set spanning both charts, so the yield curve and the
+  // inflation/policy-rate chart stack on a genuinely common time axis --
+  // otherwise each picks its own ticks from its own first/last data point
+  // (FEDFUNDS starts Jan 1, the DGS series Jan 3) and the two don't line up.
+  const [domain, axis] = useMemo(() => {
+    const times = [...yieldCurveData, ...inflationData].map((p) => p.time)
+    if (times.length === 0) {
+      const empty: [number, number] = [0, 0]
+      return [empty, buildTimeAxis(0, 0)] as const
+    }
+    const bounds: [number, number] = [Math.min(...times), Math.max(...times)]
+    return [bounds, buildTimeAxis(bounds[0], bounds[1])] as const
+  }, [yieldCurveData, inflationData])
+
   // Trailing returns are always computed off the full cached history --
   // "1mo/3mo/6mo/YTD as of today" doesn't change with the line charts' range.
   const heatmapRows: HeatmapRow[] = useMemo(() => {
@@ -154,12 +169,12 @@ export default function MacroDashboard() {
 
       <Card className="mb-8">
         <h2 className="font-serif font-semibold text-xl mb-4">Treasury Yield Curve</h2>
-        <YieldCurveChart data={yieldCurveData} />
+        <YieldCurveChart data={yieldCurveData} domain={domain} axis={axis} />
       </Card>
 
       <Card className="mb-8">
         <h2 className="font-serif font-semibold text-xl mb-4">Inflation vs. Fed Funds Rate</h2>
-        <InflationFedFundsChart data={inflationData} />
+        <InflationFedFundsChart data={inflationData} domain={domain} axis={axis} />
       </Card>
 
       <Card>

@@ -209,12 +209,57 @@ export function rangeCutoff(range: DateRange): number {
   return Math.floor(d.getTime() / 1000)
 }
 
-export function formatAxisDate(timeSec: number): string {
-  return new Date(timeSec * 1000).toLocaleDateString([], { month: 'short', year: '2-digit' })
+// Every timestamp on these charts is UTC midnight (see toEpochSeconds), so
+// every formatter must read it back in UTC too. Formatting in local time
+// shifted every label a day earlier west of Greenwich -- enough to push
+// Jan 1 back into the previous year and visibly desync two stacked charts.
+export function formatFullDate(timeSec: number): string {
+  return new Date(timeSec * 1000).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
-export function formatFullDate(timeSec: number): string {
-  return new Date(timeSec * 1000).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+function formatMonthYear(timeSec: number): string {
+  const d = new Date(timeSec * 1000)
+  const month = d.toLocaleDateString([], { month: 'short', timeZone: 'UTC' })
+  // "Jan '05" rather than "Jan 05", which reads as a day of the month.
+  return `${month} '${d.toLocaleDateString([], { year: '2-digit', timeZone: 'UTC' })}`
+}
+
+function formatYear(timeSec: number): string {
+  return new Date(timeSec * 1000).toLocaleDateString([], { year: 'numeric', timeZone: 'UTC' })
+}
+
+export type TimeAxis = { ticks: number[]; formatTick: (timeSec: number) => string }
+
+const TICK_MONTH_STEPS = [1, 2, 3, 6, 12, 24, 36, 60, 120]
+const TARGET_TICKS = 6
+
+// Ticks on clean month/year boundaries, shared by both time-series charts so
+// their x-axes line up exactly instead of each picking its own from a
+// slightly different data domain. Year-scale steps get year-only labels.
+export function buildTimeAxis(minTime: number, maxTime: number): TimeAxis {
+  if (!(maxTime > minTime)) return { ticks: [], formatTick: formatMonthYear }
+
+  const months = (maxTime - minTime) / (30.44 * 86400)
+  const step = TICK_MONTH_STEPS.find((s) => months / s <= TARGET_TICKS) ?? TICK_MONTH_STEPS[TICK_MONTH_STEPS.length - 1]
+
+  const first = new Date(minTime * 1000)
+  const cursor = new Date(
+    Date.UTC(first.getUTCFullYear(), step >= 12 ? 0 : first.getUTCMonth(), 1)
+  )
+
+  const ticks: number[] = []
+  while (Math.floor(cursor.getTime() / 1000) <= maxTime) {
+    const t = Math.floor(cursor.getTime() / 1000)
+    if (t >= minTime) ticks.push(t)
+    cursor.setUTCMonth(cursor.getUTCMonth() + step)
+  }
+
+  return { ticks, formatTick: step >= 12 ? formatYear : formatMonthYear }
 }
 
 const MAX_CHART_POINTS = 800
