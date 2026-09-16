@@ -10,6 +10,7 @@ const HOME = { href: '/', label: 'Home' }
 
 const NAV_LINKS = [
   { href: '/portfolio', label: 'Portfolio' },
+  { href: '/macro-dashboard', label: 'Macro' },
   { href: '/experience', label: 'Experience' },
   { href: '/projects', label: 'Projects' },
 ]
