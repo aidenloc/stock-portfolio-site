@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Footer from '../Footer'
-import Card from '../Card'
+import ProjectCard from './ProjectCard'
 import { CardCta } from '../CardCta'
 import { PROJECTS } from '@/lib/projects'
 
@@ -21,33 +21,19 @@ export const metadata: Metadata = {
   },
 }
 
-function Tag({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-xs uppercase tracking-widest text-[var(--color-text)]/45 border border-[var(--color-primary)]/20 rounded-[var(--border-radius)] px-2.5 py-1">
-      {children}
-    </span>
-  )
-}
-
 export default function ProjectsPage() {
   return (
     <>
-      <div className="max-w-2xl mx-auto mt-10">
+      <div className="max-w-5xl mx-auto mt-10">
         <p className="text-xs uppercase tracking-wide text-[var(--color-text)]/45 mb-2">Projects</p>
         <h1 className="font-serif font-semibold tracking-tight text-4xl sm:text-5xl mb-10">Research &amp; Modeling</h1>
 
-        <Card>
-          {/* Title/tags come from lib/projects so the home page's preview card
-              can reference this project without restating it. */}
-          <p className="text-xs text-[var(--color-primary)]/70 font-serif mb-2">{PROJECTS[0].number}</p>
-          <h2 className="font-serif font-semibold text-2xl mb-3">{PROJECTS[0].title}</h2>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {PROJECTS[0].tags.map((tag) => (
-              <Tag key={tag}>{tag}</Tag>
-            ))}
-          </div>
-
-          <div className="space-y-6 text-sm text-[var(--color-text)]/60 leading-relaxed">
+        {/* Default stretch alignment is what keeps two collapsed cards exactly
+            uniform -- they share a grid row, so they share its height. An
+            expanded card spans the whole row (see ProjectCard) rather than
+            growing its own cell, so it never stretches a collapsed sibling. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <ProjectCard project={PROJECTS[0]}>
             <div>
               <h3 className="text-[var(--color-text)] font-semibold mb-2">Why I built this</h3>
               <p>
@@ -108,30 +94,18 @@ export default function ProjectsPage() {
                 exactly who can touch what — that show up in equity research too.
               </p>
             </div>
-          </div>
 
-          <a
-            href="https://github.com/aidenloc/stock-portfolio-site"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex mt-6"
-          >
-            <CardCta label="View Source on GitHub" />
-          </a>
-        </Card>
+            <a
+              href="https://github.com/aidenloc/stock-portfolio-site"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex"
+            >
+              <CardCta label="View Source on GitHub" />
+            </a>
+          </ProjectCard>
 
-        {/* mt-8 lives on this card rather than mb-8 on the one above, so the
-            first entry's markup stays untouched. */}
-        <Card className="mt-8">
-          <p className="text-xs text-[var(--color-primary)]/70 font-serif mb-2">{PROJECTS[1].number}</p>
-          <h2 className="font-serif font-semibold text-2xl mb-3">{PROJECTS[1].title}</h2>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {PROJECTS[1].tags.map((tag) => (
-              <Tag key={tag}>{tag}</Tag>
-            ))}
-          </div>
-
-          <div className="space-y-6 text-sm text-[var(--color-text)]/60 leading-relaxed">
+          <ProjectCard project={PROJECTS[1]}>
             <p className="text-xs uppercase tracking-widest text-[var(--color-text)]/45">Part One — How It Works</p>
 
             <div>
@@ -305,22 +279,22 @@ export default function ProjectsPage() {
                 2007–2009 financial crisis and the short, sharp COVID recession of early 2020.
               </p>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-6 mt-6">
-            <Link href={PROJECTS[1].href} className="group inline-flex">
-              <CardCta label="View the Live Dashboard" />
-            </Link>
-            <a
-              href="https://github.com/aidenloc/stock-portfolio-site"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex"
-            >
-              <CardCta label="View Source on GitHub" />
-            </a>
-          </div>
-        </Card>
+            <div className="flex flex-wrap items-center gap-6">
+              <Link href={PROJECTS[1].href} className="group inline-flex">
+                <CardCta label="View the Live Dashboard" />
+              </Link>
+              <a
+                href="https://github.com/aidenloc/stock-portfolio-site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex"
+              >
+                <CardCta label="View Source on GitHub" />
+              </a>
+            </div>
+          </ProjectCard>
+        </div>
       </div>
 
       <Footer />
