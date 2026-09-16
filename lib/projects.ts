@@ -19,4 +19,12 @@ export const PROJECTS: Project[] = [
     tags: ['Next.js', 'Supabase', 'Vercel', 'TypeScript'],
     href: '/projects',
   },
+  {
+    number: 'Project 2',
+    title: 'Macro & Markets Data Visualization Dashboard',
+    teaser:
+      'A live dashboard tracking Treasury yields, inflation against Fed policy, and sector rotation — built on a cached FRED and Yahoo Finance pipeline that refreshes itself daily.',
+    tags: ['Next.js', 'Supabase', 'Vercel', 'recharts', 'FRED API', 'yahoo-finance2'],
+    href: '/macro-dashboard',
+  },
 ]
